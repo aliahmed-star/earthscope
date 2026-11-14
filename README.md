@@ -1,3 +1,5 @@
+> **Download the full runnable project (with the historical database) from [Releases](https://github.com/aliahmed-star/earthscope/releases/latest) - file EARTHSCOPE_full.zip.** The GitHub "Download ZIP" button does not include the database (Git LFS).
+
 # EarthScope / GEOSTORM
 
 EarthScope is a demonstration dashboard for exploring daily environmental data at selected coordinates, comparing countries over a shared archive period, and viewing transparent, rule-based prototype hazard assessments. The merged browser dashboard is served by FastAPI. The older Streamlit page remains available as a small optional incident-list view.
