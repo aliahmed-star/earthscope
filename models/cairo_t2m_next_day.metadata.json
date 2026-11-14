@@ -1,0 +1,169 @@
+{
+  "algorithm_version": "standardized-ridge-v1",
+  "alpha_candidates": [
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0
+  ],
+  "counts": {
+    "test": 1096,
+    "train": 13879,
+    "validation": 1096
+  },
+  "disclaimer": "Statistical model estimate, not an operational weather forecast. Performance is historical and is not a guarantee of future accuracy.",
+  "history_persisted": true,
+  "location_id": "cairo-eg",
+  "model_version": "cairo-t2m-next-day-20261114T001236Z",
+  "periods": {
+    "test": {
+      "end": "2025-12-31",
+      "start": "2023-01-01"
+    },
+    "train": {
+      "end": "2019-12-31",
+      "start": "1982-01-01"
+    },
+    "validation": {
+      "end": "2022-12-31",
+      "start": "2020-01-01"
+    }
+  },
+  "selected_alpha": 0.01,
+  "sources": [
+    "NASA POWER Daily SQLite archive (earthscope_power.sqlite3): cairo-eg/T2M"
+  ],
+  "target_definition": "daily T2M for target_date; one daily step after the latest archive date",
+  "test_comparison_note": "Ridge and both baselines use the exact same held-out test target rows.",
+  "test_metrics": {
+    "persistence": {
+      "bias": 0.00026459854014598464,
+      "mae": 1.0429470802919707,
+      "period": {
+        "end": "2025-12-31",
+        "start": "2023-01-01"
+      },
+      "r2": 0.9552738343597491,
+      "rmse": 1.4559803993727607,
+      "sample_count": 1096,
+      "units": "\u00b0C"
+    },
+    "ridge": {
+      "bias": -0.17237578274251342,
+      "mae": 0.9529194169941024,
+      "period": {
+        "end": "2025-12-31",
+        "start": "2023-01-01"
+      },
+      "r2": 0.9636947923981541,
+      "rmse": 1.3117744170795844,
+      "sample_count": 1096,
+      "units": "\u00b0C"
+    },
+    "seasonal_naive": {
+      "bias": -0.29028284671532845,
+      "mae": 2.296505474452555,
+      "period": {
+        "end": "2025-12-31",
+        "start": "2023-01-01"
+      },
+      "r2": 0.8145064542235853,
+      "rmse": 2.9650983015671177,
+      "sample_count": 1096,
+      "units": "\u00b0C"
+    }
+  },
+  "train_timestamp": "2026-11-14T00:12:36Z",
+  "units": "\u00b0C",
+  "validation_alpha_results": [
+    {
+      "alpha": 0.01,
+      "metrics": {
+        "bias": -0.06581922307927954,
+        "mae": 0.9965522141190225,
+        "period": {
+          "end": "2022-12-31",
+          "start": "2020-01-01"
+        },
+        "r2": 0.9613569962814413,
+        "rmse": 1.382728913484014,
+        "sample_count": 1096,
+        "units": "\u00b0C"
+      }
+    },
+    {
+      "alpha": 0.1,
+      "metrics": {
+        "bias": -0.06582166195558628,
+        "mae": 0.9965590892322697,
+        "period": {
+          "end": "2022-12-31",
+          "start": "2020-01-01"
+        },
+        "r2": 0.9613566271555753,
+        "rmse": 1.3827355175227742,
+        "sample_count": 1096,
+        "units": "\u00b0C"
+      }
+    },
+    {
+      "alpha": 1.0,
+      "metrics": {
+        "bias": -0.06584568243648127,
+        "mae": 0.9966287315191894,
+        "period": {
+          "end": "2022-12-31",
+          "start": "2020-01-01"
+        },
+        "r2": 0.9613528284678106,
+        "rmse": 1.3828034780943865,
+        "sample_count": 1096,
+        "units": "\u00b0C"
+      }
+    },
+    {
+      "alpha": 10.0,
+      "metrics": {
+        "bias": -0.06605100040654648,
+        "mae": 0.9975656737527863,
+        "period": {
+          "end": "2022-12-31",
+          "start": "2020-01-01"
+        },
+        "r2": 0.9613047404367532,
+        "rmse": 1.3836635103007053,
+        "sample_count": 1096,
+        "units": "\u00b0C"
+      }
+    },
+    {
+      "alpha": 100.0,
+      "metrics": {
+        "bias": -0.06601583512538502,
+        "mae": 1.0182374119133721,
+        "period": {
+          "end": "2022-12-31",
+          "start": "2020-01-01"
+        },
+        "r2": 0.9602238729379737,
+        "rmse": 1.402855221640298,
+        "sample_count": 1096,
+        "units": "\u00b0C"
+      }
+    }
+  ],
+  "validation_metrics": {
+    "bias": -0.06581922307927954,
+    "mae": 0.9965522141190225,
+    "period": {
+      "end": "2022-12-31",
+      "start": "2020-01-01"
+    },
+    "r2": 0.9613569962814413,
+    "rmse": 1.382728913484014,
+    "sample_count": 1096,
+    "units": "\u00b0C"
+  },
+  "variable": "T2M"
+}

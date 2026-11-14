@@ -1,0 +1,29 @@
+{
+  "source_url": "http://127.0.0.1:8137",
+  "visuals_are_authentic_project_screenshots": true,
+  "live_capture": {
+    "source_label": "NASA POWER \u00b7 online request",
+    "banner": "",
+    "date_range": [
+      "2026-11-07",
+      "2026-11-08"
+    ],
+    "selected_location_controls": 3,
+    "canvas_count": 6
+  },
+  "demo_capture": {
+    "source_label": "SIMULATED demonstration data",
+    "banner": "Demo mode: simulated offline dataset (date range is ignored).",
+    "displayed_locations": 7,
+    "simulated_flag_visible": true
+  },
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "failed_requests": [
+    {
+      "url": "https://api.tiles.mapbox.com/mapbox-gl-js/v3.6.2/mapbox-gl.css",
+      "error": "net::ERR_BLOCKED_BY_ORB"
+    }
+  ]
+}

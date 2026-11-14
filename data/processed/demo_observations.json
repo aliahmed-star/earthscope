@@ -1,0 +1,33 @@
+{
+  "description": "Offline GEOSTORM demonstration dataset. ALL records are simulated (is_simulated=true); none are real measurements.",
+  "observations": [
+    {"location_id": "cairo-eg", "location_name": "Cairo, Egypt", "latitude": 30.0444, "longitude": 31.2357,
+     "temperature_c": 29.0, "humidity_pct": 40.0, "wind_speed_kmh": 14.0, "rainfall_mm": 0.0,
+     "observed_at": "2026-11-13T09:00:00Z", "data_source": "demo_dataset", "is_simulated": true,
+     "note": "Normal conditions."},
+    {"location_id": "reykjavik-is", "location_name": "Reykjavik, Iceland", "latitude": 64.1466, "longitude": -21.9426,
+     "temperature_c": 3.0, "humidity_pct": 78.0, "wind_speed_kmh": 22.0, "rainfall_mm": 4.0,
+     "observed_at": "2026-11-13T09:00:00Z", "data_source": "demo_dataset", "is_simulated": true,
+     "note": "Normal conditions."},
+    {"location_id": "tokyo-jp", "location_name": "Tokyo, Japan", "latitude": 35.6762, "longitude": 139.6503,
+     "temperature_c": 24.0, "humidity_pct": 70.0, "wind_speed_kmh": 18.0, "rainfall_mm": 12.0,
+     "observed_at": "2026-11-13T09:00:00Z", "data_source": "demo_dataset", "is_simulated": true,
+     "note": "Normal conditions."},
+    {"location_id": "manila-ph", "location_name": "Manila, Philippines", "latitude": 14.5995, "longitude": 120.9842,
+     "temperature_c": 27.0, "humidity_pct": 95.0, "wind_speed_kmh": 135.0, "rainfall_mm": 180.0,
+     "observed_at": "2026-11-13T09:00:00Z", "data_source": "demo_dataset", "is_simulated": true,
+     "note": "SIMULATED severe-weather event (typhoon scenario) for the demonstration. Expected: Critical."},
+    {"location_id": "phoenix-us", "location_name": "Phoenix, USA", "latitude": 33.4484, "longitude": -112.0740,
+     "temperature_c": 44.0, "humidity_pct": 12.0, "wind_speed_kmh": 20.0, "rainfall_mm": 0.0,
+     "observed_at": "2026-11-13T09:00:00Z", "data_source": "demo_dataset", "is_simulated": true,
+     "note": "Simulated heat wave. Expected: High (Extreme Heat)."},
+    {"location_id": "sydney-au", "location_name": "Sydney, Australia", "latitude": -33.8688, "longitude": 151.2093,
+     "temperature_c": 38.0, "humidity_pct": 18.0, "wind_speed_kmh": 45.0, "rainfall_mm": 0.0,
+     "observed_at": "2026-11-13T09:00:00Z", "data_source": "demo_dataset", "is_simulated": true,
+     "note": "Simulated hot, dry, windy day. Expected: High (Wildfire Conditions)."},
+    {"location_id": "nairobi-ke", "location_name": "Nairobi, Kenya", "latitude": -1.2921, "longitude": 36.8219,
+     "temperature_c": 22.0, "humidity_pct": 60.0, "wind_speed_kmh": null, "rainfall_mm": 2.0,
+     "observed_at": "2026-11-13T09:00:00Z", "data_source": "demo_dataset", "is_simulated": true,
+     "note": "Wind sensor offline (missing data) - demonstrates limitation reporting."}
+  ]
+}

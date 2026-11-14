@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GEOSTORM · EarthScope</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+<style>
+:root{
+  --bg:#070b14; --panel:#0e1524; --panel2:#121b2e; --line:#1c2740; --text:#e6ecf8; --muted:#8190ad;
+  --cyan:#22d3ee; --green:#34d399; --amber:#fbbf24; --orange:#fb923c; --red:#f43f5e; --violet:#a78bfa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100%}
+body{background:
+  radial-gradient(900px 500px at 10% -10%, rgba(34,211,238,.10), transparent 60%),
+  radial-gradient(800px 500px at 100% 0%, rgba(167,139,250,.10), transparent 60%), var(--bg);
+  background-attachment:fixed}
+.wrap{max-width:1500px;margin:0 auto;padding:20px 24px 40px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));box-shadow:0 0 24px rgba(34,211,238,.35)}
+.logo svg{width:22px;height:22px}
+.brand h1{font-size:18px;letter-spacing:.14em;font-weight:700}
+.brand p{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.spacer{flex:1}
+.pill{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line);border-radius:999px;
+  background:var(--panel);font-size:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--green);box-shadow:0 0 10px var(--green)}
+.dot.sim{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.dot.bad{background:var(--red);box-shadow:0 0 10px var(--red)}
+
+.controls{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:14px 16px;margin-bottom:16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.field label{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+input[type=date]{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;
+  padding:9px 11px;font:inherit;font-size:13px;color-scheme:dark}
+.dates{display:flex;gap:10px;transition:.2s}
+.dates.off{opacity:.35;pointer-events:none}
+.history-hint{max-width:360px;margin-top:6px;color:var(--muted);font-size:10.5px;line-height:1.45}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;padding:6px 14px;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--cyan);color:#04202a;font-weight:600}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel2);color:var(--muted);padding:6px 11px;border-radius:999px;
+  font:inherit;font-size:12px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:6px;user-select:none}
+.chip i{width:8px;height:8px;border-radius:50%;display:block;opacity:.4;background:currentColor}
+.chip:hover{color:var(--text);border-color:#2b3a5c}
+.chip.on{color:var(--text);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--panel2))}
+.chip.on i{background:var(--c);opacity:1;box-shadow:0 0 8px var(--c)}
+.btn{background:linear-gradient(135deg,var(--cyan),#38bdf8);color:#04202a;border:0;border-radius:10px;padding:10px 20px;
+  font:inherit;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(34,211,238,.25);transition:.15s}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:wait;transform:none}
+.btn:focus-visible,.seg button:focus-visible,.chip:focus-visible,.sbtn:focus-visible,.inc-location:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+.banner{display:none;margin-bottom:14px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;
+  background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);color:#fde68a}
+.banner.err{background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.4);color:#fecdd3}
+.banner.show{display:block}
+.banner code{background:rgba(255,255,255,.08);padding:2px 6px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;inset:auto -20px -30px auto;width:110px;height:110px;border-radius:50%;
+  background:var(--c);opacity:.10;filter:blur(20px)}
+.kpi .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-size:30px;font-weight:700;margin-top:6px;font-family:'JetBrains Mono',monospace}
+.kpi .v small{font-size:13px;color:var(--muted);margin-left:4px;font-family:Inter}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px;min-height:16px}
+
+.main{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.card h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:14px 18px;
+  border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.card h2 span{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:none;font-weight:500}
+#map{height:460px;background:#0a0f1c;position:relative;overflow:hidden}
+.deck-tip{font-family:Inter,sans-serif;font-size:12.5px;line-height:1.5;background:#121b2e!important;color:#e6ecf8!important;border:1px solid #1c2740;border-radius:10px!important;padding:10px 12px!important;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.map-legend{position:absolute;left:12px;bottom:12px;z-index:5;display:flex;gap:10px;padding:6px 10px;border-radius:999px;background:rgba(14,21,36,.85);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+.map-legend span{display:flex;align-items:center;gap:5px}.map-legend i{width:9px;height:9px;border-radius:50%;display:block}
+
+.incidents{height:460px;overflow:auto;padding:10px}
+.inc{padding:12px 12px 12px 14px;border-radius:12px;border:1px solid var(--line);border-left:4px solid var(--c);
+  background:var(--panel2);margin-bottom:8px;transition:.15s}
+.inc.done{opacity:.5}
+.inc .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;cursor:pointer}
+.inc-location{width:100%;text-align:left;color:inherit;font:inherit;background:transparent;border:0;padding:0}
+.inc b{font-size:14px;display:block}
+.inc .loc{font-size:12px;color:var(--muted);margin-top:2px}
+.inc ul{margin:8px 0 0 16px;font-size:11.5px;color:#aab6cf;line-height:1.5}
+.inc .acts{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.inc .meta{font-size:11px;color:var(--muted);margin-left:auto}
+.tag{padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:600;letter-spacing:.04em;white-space:nowrap;
+  background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
+.sbtn{border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-size:12px;
+  padding:5px 11px;border-radius:8px;cursor:pointer;transition:.15s}
+.sbtn:hover{border-color:var(--cyan);color:var(--cyan)}
+.sbtn.pri{background:var(--cyan);border-color:var(--cyan);color:#04202a;font-weight:600}
+.sbtn.pri:hover{color:#04202a;filter:brightness(1.08)}
+.notes{margin-top:8px;font-size:11.5px;color:#aab6cf;border-top:1px dashed var(--line);padding-top:6px}
+.empty{height:100%;display:grid;place-items:center;color:var(--muted);font-size:13px;text-align:center;padding:24px;line-height:1.6}
+.empty b{display:block;color:var(--text);font-size:15px;margin-bottom:4px}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:right;padding:10px 14px}
+td{padding:10px 14px;text-align:right;border-top:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:12.5px}
+th:first-child,td:first-child{text-align:left;font-family:Inter;font-size:13px}
+td:first-child{display:flex;align-items:center;gap:8px}
+td i{width:10px;height:10px;border-radius:3px;display:block;flex:none}
+.muted{color:var(--muted)}
+.tablewrap{overflow:auto}
+
+.charts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.chart-box{height:270px;padding:12px 16px 14px;position:relative}
+.insight-card,.prediction-card{margin-top:14px}
+.insight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+.insight-item{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.insight-item h3{font-size:12px;letter-spacing:.05em;margin-bottom:7px}
+.insight-item p,.prediction-body{font-size:12px;line-height:1.55;color:#b9c5db}
+.insight-item .meta{font-size:10.5px;color:var(--muted);margin-top:7px}
+.prediction-body{padding:13px 18px}
+.prediction-value{font:700 24px 'JetBrains Mono',monospace;color:var(--violet);margin:2px 0 6px}
+.summary-empty{padding:14px 18px;color:var(--muted);font-size:12px}
+
+footer{margin-top:22px;text-align:center;font-size:11px;color:var(--muted);line-height:1.7}
+.source-panel{margin-top:18px;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px;line-height:1.7}
+.source-panel summary{color:var(--text);cursor:pointer;font-weight:600}
+.source-panel p{margin-top:8px;max-width:1100px}
+.source-panel a{color:var(--cyan)}
+
+@media(max-width:1000px){.main,.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.wrap{padding:14px 12px 28px}.controls{align-items:stretch;padding:12px}.controls>.field,.controls>.btn{width:100%}.dates input{min-width:0;width:50%}.seg{width:100%}.seg button{flex:1;padding:7px 8px}.kpis{gap:8px}.kpi{padding:12px}.kpi .v{font-size:24px}#map{height:360px}.incidents{height:auto;max-height:460px}.map-legend{gap:6px;font-size:10px;padding:5px 7px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<header>
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#04202a" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg></div>
+    <div><h1>GEOSTORM</h1><p>EarthScope · Environmental Data</p></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="pill" aria-live="polite"><span class="dot" id="srcDot"></span><span id="srcText">Connecting…</span></div>
+  <div class="pill" id="clock">--:--</div>
+</header>
+
+<div class="controls">
+  <div class="field"><label>Data source</label>
+    <div class="seg" id="modeSeg" role="group" aria-label="Data source"><button type="button" data-m="live" class="on" aria-pressed="true">NASA POWER data</button><button type="button" data-m="historical" aria-pressed="false">Historical archive</button><button type="button" data-m="demo" aria-pressed="false">Simulated demo</button></div>
+  </div>
+  <div class="field"><label>Date range</label>
+    <div class="dates" id="dates"><label for="start" class="sr-only">Start date in UTC</label><input type="date" id="start" aria-label="Start date in UTC"><label for="end" class="sr-only">End date in UTC</label><input type="date" id="end" aria-label="End date in UTC"></div>
+    <div class="history-hint" id="historyHint" hidden></div>
+  </div>
+  <div class="field" style="flex:1;min-width:280px"><label>Locations</label><div class="chips" id="chips" role="group" aria-label="Toggle locations"></div></div>
+  <button class="btn" id="go" type="button">Analyze</button>
+</div>
+
+<div class="banner" id="banner" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<section class="kpis">
+  <div class="kpi" style="--c:var(--cyan)"><div class="l">Locations</div><div class="v" id="kStations">–</div><div class="s" id="kStationsSub">&nbsp;</div></div>
+  <div class="kpi" style="--c:var(--red)"><div class="l">Active incidents</div><div class="v" id="kInc">–</div><div class="s" id="kIncSub">&nbsp;</div></div>
+  <div class="kpi" style="--c:var(--amber)"><div class="l">Peak temperature</div><div class="v" id="kTemp">–</div><div class="s" id="kTempSub">&nbsp;</div></div>
+  <div class="kpi" style="--c:var(--green)"><div class="l">Peak wind</div><div class="v" id="kWind">–</div><div class="s" id="kWindSub">&nbsp;</div></div>
+</section>
+
+<section class="main">
+  <div class="card" style="position:relative"><h2>Requested locations map <span id="mapSub"></span></h2><div id="map" role="img" aria-label="Interactive map showing selected locations by prototype risk level"></div>
+  <div class="map-legend"><span><i style="background:#34d399"></i>Low</span><span><i style="background:#fbbf24"></i>Moderate</span><span><i style="background:#fb923c"></i>High</span><span><i style="background:#f43f5e"></i>Critical</span></div></div>
+  <div class="card"><h2>Incidents <span id="incCount"></span></h2><div class="incidents" id="incList"></div></div>
+</section>
+
+<section class="card" style="margin-bottom:14px">
+  <h2>Latest readings <span id="tblSub"></span></h2>
+  <div class="tablewrap"><table>
+    <caption class="sr-only">Daily environmental values and prototype risk assessment for selected locations</caption>
+    <thead><tr><th>Location</th><th>Risk</th><th>Temp °C</th><th>Humidity %</th><th>Wind km/h</th><th>Rain mm/day</th><th>Date (UTC)</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table></div>
+</section>
+
+<section class="charts">
+  <div class="card"><h2>Temperature <span>°C</span></h2><div class="chart-box"><canvas id="c_temperature"></canvas></div></div>
+  <div class="card"><h2>Humidity <span>%</span></h2><div class="chart-box"><canvas id="c_humidity"></canvas></div></div>
+  <div class="card"><h2>Wind speed <span>km/h</span></h2><div class="chart-box"><canvas id="c_wind"></canvas></div></div>
+  <div class="card"><h2>Rainfall <span>mm / day</span></h2><div class="chart-box"><canvas id="c_rainfall"></canvas></div></div>
+</section>
+
+<section class="card insight-card"><h2>What the selected graphs show <span id="summarySub">Calculated from plotted observations</span></h2><div class="insight-grid" id="graphSummaries" aria-live="polite"><div class="summary-empty">Summaries will appear when data is loaded.</div></div></section>
+<section class="card prediction-card" id="predictionPanel" hidden><h2>One-day model estimate <span id="predictionStatus">NASA POWER daily input</span></h2><div class="prediction-body" id="predictionBody">Loading model result…</div></section>
+
+<details class="source-panel"><summary>About the data and risk classifications</summary><p>NASA POWER provides daily gridded environmental data for the selected coordinates; these are not in-situ weather-station observations. The dashboard requests T2M (°C), RH2M (%), WS10M (m/s converted to km/h), and PRECTOTCORR (mm/day), with daily dates requested in UTC. Parameter products and source datasets can vary. See the <a href="https://power.larc.nasa.gov/docs/services/api/temporal/daily/" target="_blank" rel="noopener noreferrer">NASA POWER Daily API documentation</a>, <a href="https://power.larc.nasa.gov/docs/tutorials/parameters/" target="_blank" rel="noopener noreferrer">parameter dictionary</a>, and <a href="https://power.larc.nasa.gov/docs/referencing/" target="_blank" rel="noopener noreferrer">NASA POWER referencing guide</a>. Risk levels use prototype rules and are not official warnings or validated disaster predictions. Incident actions only change a local demonstration status; they do not contact emergency services.</p></details>
+<footer id="foot">GEOSTORM · EARTHSCOPE</footer>
+</main>
+
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/deck.gl@8.9.35/dist.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const API = location.protocol === 'file:' ? 'http://localhost:8000' : '';
+const PALETTE = ['#22d3ee','#a78bfa','#34d399','#fbbf24','#f472b6','#60a5fa','#fb923c','#2dd4bf'];
+const RISK = {Low:'#34d399', Moderate:'#fbbf24', High:'#fb923c', Critical:'#f43f5e'};
+const STATUS = {'Pending':'#fbbf24','In Progress':'#22d3ee','Resolved':'#34d399'};
+const GRAY = '#64748b';
+
+const S = {mode:'live', all:[], historyIds:new Set(), historyAvailability:null,
+           sel:{live:new Set(), demo:new Set(), historical:new Set()}, colors:{}, charts:{}, stations:{},
+           deck:null, data:null, dataMode:'live'};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const num = (v, d=1) => v == null ? '–' : Number(v).toFixed(d);
+
+async function api(url, opts={}, ms=60000){
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), ms);
+  try{
+    const r = await fetch(API+url, {...opts, signal:ctl.signal});
+    const body = await r.json().catch(()=>null);
+    if(!r.ok){
+      const msg = body?.error?.message || body?.detail || ('HTTP '+r.status);
+      throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
+    return body;
+  } finally { clearTimeout(t) }
+}
+function setSource(kind, text){ $('srcDot').className = 'dot ' + kind; $('srcText').textContent = text }
+function banner(html, err=false){
+  const b = $('banner'); b.innerHTML = html || ''; b.classList.toggle('show', !!html); b.classList.toggle('err', err);
+}
+
+/* ---------------- map (deck.gl - same circle map as the original PyDeck dashboard) ---------------- */
+const RISK_RGBA = {Critical:[255,69,0,200], High:[255,140,0,180], Moderate:[255,215,0,170], Low:[46,139,87,160]};
+const RISK_RADIUS = {Critical:300000, High:220000, Moderate:160000, Low:100000};   // metres, same as the old map
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const HOME_VIEW = {latitude:20, longitude:0, zoom:1.2, pitch:25, bearing:0};
+function initMap(){
+  S.deck = new deck.DeckGL({
+    container:'map', map:maplibregl, mapStyle:MAP_STYLE,
+    initialViewState:HOME_VIEW, controller:true, layers:[],
+    getTooltip:({object}) => object && {className:'deck-tip', html:tipHtml(object), style:{background:'transparent',padding:0}}
+  });
+}
+function tipHtml(st){
+  const c = RISK[st.risk_level] || GRAY, m = st.measurements || {};
+  return `<div style="font-weight:700;font-size:14px">${esc(st.name)}</div>
+    <div style="color:${c};font-weight:600">&#9679; ${esc(st.risk_level || 'No data')} &middot; ${esc(st.primary_hazard || 'No hazard')}</div>
+    <div style="margin-top:6px;display:grid;grid-template-columns:auto auto;gap:1px 14px;color:#cbd5e1">
+      <span>Temperature</span><b style="text-align:right">${num(m.temperature_c)} &deg;C</b>
+      <span>Humidity</span><b style="text-align:right">${num(m.humidity_pct,0)} %</b>
+      <span>Wind</span><b style="text-align:right">${num(m.wind_speed_kmh)} km/h</b>
+      <span>Daily precipitation</span><b style="text-align:right">${num(m.rainfall_mm)} mm/day</b></div>
+    <div style="margin-top:6px;color:#8190ad;font-size:11px">${esc((st.observed_at||'').slice(0,10))} &middot; ${esc(st.data_source)}${st.is_simulated?' &middot; <b style="color:#fbbf24">SIMULATED</b>':''}</div>`;
+}
+function flyTo(lon, lat, zoom){
+  S.deck.setProps({initialViewState:{longitude:lon, latitude:lat, zoom, pitch:HOME_VIEW.pitch, bearing:0,
+    transitionDuration:800, transitionInterpolator:new deck.FlyToInterpolator()}});
+}
+function drawMap(stations){
+  S.stations = {}; stations.forEach(st => S.stations[st.id] = st);
+  const layer = new deck.ScatterplotLayer({
+    id:'stations', data:stations, pickable:true, autoHighlight:true,
+    getPosition:d => [d.lon, d.lat],
+    getFillColor:d => RISK_RGBA[d.risk_level] || [100,116,139,180],
+    getRadius:d => RISK_RADIUS[d.risk_level] || 150000,
+    radiusMinPixels:10, radiusMaxPixels:60,
+    stroked:true, getLineColor:[255,255,255,110], lineWidthMinPixels:1,
+    onClick:({object}) => object && flyTo(object.lon, object.lat, 4.5),
+    updateTriggers:{getFillColor:stations.map(s=>s.risk_level).join(), getRadius:stations.map(s=>s.risk_level).join()}
+  });
+  S.deck.setProps({layers:[layer]});
+  if(stations.length > 1){
+    const lons = stations.map(s => s.lon), lats = stations.map(s => s.lat);
+    const el = $('map'), vp = new deck.WebMercatorViewport({width:el.clientWidth || 700, height:el.clientHeight || 460});
+    const f = vp.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], {padding:70});
+    flyTo(f.longitude, f.latitude, Math.min(f.zoom, 4));
+  } else if(stations.length === 1){ flyTo(stations[0].lon, stations[0].lat, 4); }
+  $('mapSub').textContent = stations.length + ' locations';
+}
+
+/* ---------------- charts ---------------- */
+const CHART_KEYS = ['temperature','humidity','wind','rainfall'];
+const UNITS = {temperature:'°C', humidity:'%', wind:'km/h', rainfall:'mm/day'};
+function initCharts(){
+  Chart.defaults.color = '#8190ad'; Chart.defaults.font.family = 'Inter';
+  CHART_KEYS.forEach(k => {
+    S.charts[k] = new Chart($('c_'+k), {type: k==='rainfall' ? 'bar' : 'line', data:{labels:[], datasets:[]}, options:{
+      responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{display:true, position:'bottom', labels:{boxWidth:10, boxHeight:10, usePointStyle:true, padding:14}},
+        tooltip:{backgroundColor:'#121b2e', borderColor:'#1c2740', borderWidth:1, padding:10, titleColor:'#e6ecf8', bodyColor:'#cbd5e1',
+          callbacks:{label: c => ` ${c.dataset.label}: ${c.parsed.y == null ? 'no data' : c.parsed.y + ' ' + UNITS[k]}`}}},
+      scales:{x:{title:{display:true,text:'Date (UTC)'},grid:{color:'rgba(255,255,255,.04)'}, ticks:{maxTicksLimit:8, maxRotation:0}},
+              y:{title:{display:true,text:UNITS[k]},grid:{color:'rgba(255,255,255,.06)'}, beginAtZero:k==='rainfall'}},
+      elements:{line:{tension:.35, borderWidth:2}}
+    }});
+  });
+}
+function drawCharts(d){
+  const ids = Object.keys(d.series);
+  const labels = ids.length ? d.series[ids[0]].dates : [];
+  const p = d.mode === 'historical' ? d.prediction : null;
+  const showPrediction = !!(p && p.as_of === d.range?.end && labels[labels.length-1] === p.as_of && ids.includes(p.location_id));
+  const chartLabels = showPrediction ? [...labels, p.target_date] : labels;
+  const few = labels.length <= 3;
+  const nameOf = id => (d.stations.find(s => s.id === id) || {}).name || id;
+  CHART_KEYS.forEach(k => {
+    const ch = S.charts[k]; ch.data.labels = chartLabels;
+    ch.data.datasets = ids.map(id => {
+      const c = S.colors[id] || '#22d3ee', vals = [...d.series[id][k]];
+      if(showPrediction) vals.push(null);
+      return k === 'rainfall'
+        ? {label:nameOf(id), data:vals, backgroundColor:c+'cc', borderRadius:3}
+        : {label:nameOf(id), data:vals, borderColor:c, backgroundColor:c, pointRadius: few ? 5 : 0, pointHoverRadius:5, spanGaps:false};
+    });
+    if(k === 'temperature' && showPrediction){
+      const predictionData = Array(chartLabels.length).fill(null);
+      predictionData[predictionData.length-1] = Number(p.predicted_value);
+      ch.data.datasets.push({label:`Model estimate · ${nameOf(p.location_id)}`, data:predictionData,
+        showLine:false, pointRadius:7, pointHoverRadius:9, pointStyle:'triangle', borderColor:'#a78bfa',
+        backgroundColor:'#a78bfa', borderWidth:2});
+    }
+    ch.update();
+  });
+}
+
+function drawGraphSummaries(d){
+  const root = $('graphSummaries');
+  const variables = d.graph_summaries?.variables;
+  const spec = [
+    ['temperature','Temperature'],['humidity','Humidity'],['wind','Wind speed'],['rainfall','Daily rainfall']
+  ];
+  if(!variables){
+    root.innerHTML = '<div class="summary-empty">No summary was produced because the selected graph data are unavailable.</div>';
+    $('summarySub').textContent = 'No data available'; return;
+  }
+  const fmt = (v,unit) => v == null || !Number.isFinite(Number(v)) ? 'not available' : `${Number(v).toFixed(2)} ${unit}`;
+  const cards = spec.map(([key,label]) => {
+    const group = variables[key] || {};
+    const unit = group.unit || UNITS[key] || '';
+    const entries = group.locations || [];
+    const body = entries.length ? entries.map(item => {
+      const min = item.min ? `${fmt(item.min.value,unit)} (${esc(item.min.date)})` : 'not available';
+      const max = item.max ? `${fmt(item.max.value,unit)} (${esc(item.max.date)})` : 'not available';
+      const change = item.change && typeof item.change === 'object' ? item.change.change : item.change;
+      const comparison = item.comparison?.status === 'computed'
+        ? `first-half mean ${fmt(item.comparison.first_half?.mean,unit)} vs second-half mean ${fmt(item.comparison.second_half?.mean,unit)}`
+        : '';
+      const relationships = (item.relationships || []).filter(r => r.status === 'computed' && r.coefficient != null).map(r =>
+        `${esc(r.variable)} association r=${Number(r.coefficient).toFixed(2)} (n=${Number(r.n)}; descriptive, not causal)`).join('; ');
+      const outliers = item.potential_outliers || {};
+      const outlierText = outliers.status === 'screened'
+        ? `${Number(outliers.count || 0)} point(s) crossed the 1.5-IQR statistical screen (not an event)` : '';
+      const caveats = (item.caveats || []).map(esc).join(' ');
+      return `<p><b>${esc(item.location_name || item.location_id)}</b>: ${esc(item.summary || 'Insufficient valid observations for a reliable description.')}</p>
+        <div class="meta">n=${Number(item.count || 0)} valid · ${Number(item.missing_count || 0)} missing · mean ${fmt(item.mean,unit)} · median ${fmt(item.median,unit)} · min ${min} · max ${max}${change == null ? '' : ` · first-to-last change ${fmt(change,unit)}`}${item.trend_per_year == null ? '' : ` · slope ${fmt(item.trend_per_year,unit+'/year')}`}${comparison ? ` · ${esc(comparison)}` : ''}${outlierText ? ` · ${esc(outlierText)}` : ''}${relationships ? `<br>${relationships}` : ''}${caveats ? `<br>${caveats}` : ''}</div>`;
+    }).join('') : '<p>No plotted observations are available for this variable in the selected range.</p>';
+    return `<article class="insight-item"><h3>${label} <span class="muted">${esc(unit)}</span></h3>${body}</article>`;
+  });
+  root.innerHTML = cards.join('');
+  $('summarySub').textContent = `${esc(d.range?.start || '')} to ${esc(d.range?.end || '')} · based on plotted points`;
+}
+
+function drawPrediction(d){
+  const panel = $('predictionPanel');
+  panel.hidden = d.mode !== 'historical';
+  if(panel.hidden) return;
+  const p = d.prediction;
+  if(!p){
+    $('predictionStatus').textContent = 'Model unavailable';
+    $('predictionBody').textContent = d.predictionError || 'No saved model result is available. Run the documented training script after the archive is installed.';
+    return;
+  }
+  const ev = p.evaluation || {};
+  const test = ev.held_out_model_metrics || ev.test || ev.test_metrics || {};
+  const baseline = ev.baseline_comparison || ev.baselines || ev.baseline_metrics || {};
+  const period = ev.period || test.period || {};
+  const metricText = (name,value) => value == null || !Number.isFinite(Number(value)) ? '' : `${name} ${Number(value).toFixed(2)} ${p.unit}`;
+  const modelMetrics = [metricText('MAE',test.mae),metricText('RMSE',test.rmse)].filter(Boolean).join(' · ');
+  const baseBits = Object.entries(baseline).map(([name,m]) => {
+    const mae = typeof m === 'number' ? m : m?.mae;
+    const rmse = typeof m === 'number' ? null : m?.rmse;
+    return [metricText(`${name} MAE`,mae),metricText('RMSE',rmse)].filter(Boolean).join(', ');
+  }).filter(Boolean).join(' · ');
+  const baselineMae = Object.values(baseline).map(m => typeof m === 'number' ? m : m?.mae).filter(Number.isFinite);
+  const modelWins = Number.isFinite(Number(test.mae)) && baselineMae.length
+    ? (Number(test.mae) < Math.min(...baselineMae) ? 'Ridge MAE was lower than both baselines on this held-out period.'
+      : Number(test.mae) > Math.min(...baselineMae) ? 'At least one baseline had lower MAE; the model is experimental, not a validated forecast.'
+      : 'Ridge MAE matched the best baseline on this held-out period.') : '';
+  const currentBaselines = Object.entries(p.baseline_predictions || {}).map(([name,value]) =>
+    `${name.replaceAll('_',' ')} ${Number(value).toFixed(2)} ${p.unit}`).join(' · ');
+  const caveats = (p.caveats || []).map(esc).join(' ');
+  $('predictionStatus').textContent = `${esc(p.model_version || 'saved model')} · 1 daily step`;
+  $('predictionBody').innerHTML = `<div class="prediction-value">${Number(p.predicted_value).toFixed(2)} ${esc(p.unit)}</div>
+    <p><b>${esc(p.location_name || p.location_id)}</b> · model input through ${esc(p.as_of)} · target day ${esc(p.target_date)} UTC.</p>
+    <p>${modelMetrics ? `Held-out evaluation: ${modelMetrics}${period.start ? ` · ${esc(period.start)} to ${esc(period.end)}` : ''}${(ev.sample_count || test.sample_count) ? ` · n=${Number(ev.sample_count || test.sample_count)}` : ''}${test.r2 == null ? '' : ` · R² ${Number(test.r2).toFixed(3)}`}.` : 'Held-out evaluation details are available from the model endpoint.'}</p>
+    ${baseBits ? `<p>Same test dates, baselines: ${esc(baseBits)}.</p>` : ''}
+    ${modelWins ? `<p>${esc(modelWins)}</p>` : ''}
+    ${currentBaselines ? `<p>Same target-day baselines: ${esc(currentBaselines)}.</p>` : ''}
+    <p>Statistical model estimate, not an operational weather forecast. It is separate from historical observations; the chart marker appears only when the selected range ends on its input date.</p>${caveats ? `<p class="meta">${caveats}</p>` : ''}`;
+}
+
+/* ---------------- readings table + KPIs ---------------- */
+function drawTable(d){
+  $('tblSub').textContent = d.is_simulated ? 'simulated data' : 'latest available day per location';
+  if(!d.stations.length){
+    $('tbody').innerHTML = '<tr><td colspan="7" class="muted">No usable observations are available for this selection and date range.</td></tr>';
+    return;
+  }
+  $('tbody').innerHTML = d.stations.map(s => {
+    const m = s.measurements, c = RISK[s.risk_level] || GRAY;
+    return `<tr><td><i style="background:${S.colors[s.id]||'#22d3ee'}"></i>${esc(s.name)}</td>
+      <td><span class="tag" style="--c:${c}">${esc((s.risk_level||'No data').toUpperCase())}</span></td>
+      <td>${num(m.temperature_c)}</td><td>${num(m.humidity_pct,0)}</td><td>${num(m.wind_speed_kmh)}</td><td>${num(m.rainfall_mm)}</td>
+      <td class="muted">${esc((s.observed_at||'').slice(0,10))}</td></tr>`;
+  }).join('');
+}
+function peak(d, key){
+  let best = null;
+  d.stations.forEach(st => {
+    const s = d.series[st.id]; if(!s) return;
+    s[key].forEach((v,i) => { if(v != null && (best == null || v > best.v)) best = {v, name:st.name, date:s.dates[i]} });
+  });
+  return best;
+}
+function drawKPIs(d){
+  $('kStations').textContent = d.stations.length;
+  $('kStationsSub').textContent = d.stations.filter(s => s.alert).length + ' at prototype alert level';
+  const active = d.incidents.filter(i => i.status !== 'Resolved');
+  $('kInc').textContent = active.length;
+  const crit = active.filter(i => i.risk_level === 'Critical').length;
+  $('kIncSub').textContent = active.length ? (crit ? crit + ' critical' : 'none critical') : 'all clear';
+  const t = peak(d,'temperature'), w = peak(d,'wind');
+  $('kTemp').innerHTML = t ? `${t.v.toFixed(1)}<small>°C</small>` : '–';
+  $('kTempSub').textContent = t ? `${t.name} · ${t.date}` : '';
+  $('kWind').innerHTML = w ? `${w.v.toFixed(1)}<small>km/h</small>` : '–';
+  $('kWindSub').textContent = w ? `${w.name} · ${w.date}` : '';
+}
+
+/* ---------------- incidents ---------------- */
+function drawIncidents(){
+  const list = (S.data.incidents || []).slice().sort((a,b) => (a.status==='Resolved') - (b.status==='Resolved'));
+  const active = list.filter(i => i.status !== 'Resolved').length;
+  $('incCount').textContent = `${active} active · ${list.length} total`;
+  if(!list.length){
+    const message = S.data.mode === 'historical'
+      ? 'Historical review does not create response incidents.'
+      : (S.data.stations.length
+        ? 'No location reached a prototype alert threshold (Moderate or above).'
+        : 'No location data is available for this selection.');
+    $('incList').innerHTML = `<div class="empty"><div><b>No incidents</b>${message}<br>
+      Switch to <i>Simulated demo</i> to see the labelled example scenario.</div></div>`;
+    return;
+  }
+  $('incList').innerHTML = list.map(i => {
+    const c = RISK[i.risk_level] || GRAY, sc = STATUS[i.status] || GRAY;
+    const reasons = (i.risk_explanation || []).map(r => `<li>${esc(r)}</li>`).join('');
+    const notes = (i.operator_notes || []).map(n => `<div>📝 ${esc(n.text)}</div>`).join('');
+    let acts = '';
+    if(i.status === 'Pending') acts += `<button class="sbtn pri" data-act="start" data-id="${esc(i.incident_id)}">Start response</button>`;
+    if(i.status === 'In Progress') acts += `<button class="sbtn pri" data-act="resolve" data-id="${esc(i.incident_id)}">Resolve</button>`;
+    if(i.status !== 'Resolved') acts += `<button class="sbtn" data-act="note" data-id="${esc(i.incident_id)}">Add note</button>`;
+    return `<div class="inc ${i.status==='Resolved'?'done':''}" style="--c:${c}">
+      <button class="top inc-location" type="button" data-loc="${esc(i.location_id)}" aria-label="Show ${esc(i.location_name)} on the map"><span><b>${esc(i.hazard_type)}</b><span class="loc">${esc(i.location_name)} · ${esc(i.incident_id)}</span></span>
+        <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end">
+          <span class="tag" style="--c:${c}">${esc(i.risk_level.toUpperCase())}</span>
+          <span class="tag" style="--c:${sc}">${esc(i.status.toUpperCase())}</span></div></button>
+      <ul>${reasons}</ul>
+      ${notes ? `<div class="notes">${notes}</div>` : ''}
+      <div class="acts">${acts}<span class="meta">${i.is_simulated ? 'SIMULATED · ' : ''}${esc((i.detected_at||'').slice(0,16).replace('T',' '))} UTC</span></div>
+    </div>`;
+  }).join('');
+}
+$('incList').addEventListener('click', async e => {
+  const btn = e.target.closest('button[data-act]');
+  if(btn){
+    e.stopPropagation();
+    const act = btn.dataset.act, id = btn.dataset.id;
+    let note = null;
+    if(act === 'note'){ note = prompt('Operator note:'); if(!note) return; }
+    btn.disabled = true;
+    try{
+      const upd = await api(`/api/incidents/${encodeURIComponent(id)}/${act}?mode=${S.dataMode}`,
+        {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note})});
+      S.data.incidents = S.data.incidents.map(i => i.incident_id === upd.incident_id ? upd : i);
+      drawIncidents(); drawKPIs(S.data);
+    }catch(err){ banner('Could not update incident: ' + esc(err.message), true); btn.disabled = false }
+    return;
+  }
+  const locationButton = e.target.closest('.inc-location');
+  if(locationButton){ const st = S.stations && S.stations[locationButton.dataset.loc]; if(st) flyTo(st.lon, st.lat, 5) }
+});
+
+/* ---------------- controls ---------------- */
+function visibleStations(){
+  if(S.mode === 'demo') return S.all.filter(s => s.in_demo);
+  if(S.mode === 'historical') return S.all.filter(s => S.historyIds.has(s.id));
+  return S.all;
+}
+let filterTimer = null;
+function applyFiltersSoon(){ clearTimeout(filterTimer); filterTimer = setTimeout(run, 450); }
+function drawChips(){
+  const sel = S.sel[S.mode];
+  $('chips').innerHTML = visibleStations().map(s =>
+    `<button type="button" class="chip ${sel.has(s.id)?'on':''}" style="--c:${S.colors[s.id]}" data-id="${esc(s.id)}" aria-pressed="${sel.has(s.id)}"><i aria-hidden="true"></i>${esc(s.name)}</button>`).join('');
+  document.querySelectorAll('.chip').forEach(el => el.onclick = () => {
+    const id = el.dataset.id; sel.has(id) ? sel.delete(id) : sel.add(id); drawChips(); applyFiltersSoon();
+  });
+  $('dates').classList.toggle('off', S.mode === 'demo');
+  $('historyHint').hidden = S.mode !== 'historical';
+  if(S.mode !== 'historical'){
+    $('start').min = $('start').max = $('end').min = $('end').max = '';
+  }
+}
+function tenYearsBefore(day){
+  const [year,month,dayOfMonth] = day.split('-').map(Number);
+  const targetYear = year - 10;
+  const lastDay = new Date(Date.UTC(targetYear, month, 0)).getUTCDate();
+  return `${targetYear}-${pad(month)}-${pad(Math.min(dayOfMonth,lastDay))}`;
+}
+function setHistoricalDateWindow(){
+  const coverage = S.historyAvailability?.coverage || [];
+  const selected = [...S.sel.historical];
+  const byId = new Map(coverage.map(item => [item.location_id,item]));
+  const rows = selected.map(id => byId.get(id)).filter(item => item && item.min_date && item.max_date);
+  if(!rows.length){
+    $('historyHint').textContent = 'No archived NASA POWER coverage is available for this selection.';
+    return false;
+  }
+  const earliest = rows.map(item => item.min_date).sort().pop();
+  const latest = rows.map(item => item.max_date).sort()[0];
+  if(earliest > latest){
+    $('historyHint').textContent = 'The selected locations have no common coverage window.';
+    return false;
+  }
+  $('start').min = $('end').min = earliest;
+  $('start').max = $('end').max = latest;
+  $('end').value = latest;
+  const desiredStart = tenYearsBefore(latest);
+  $('start').value = desiredStart < earliest ? earliest : desiredStart;
+  $('historyHint').textContent = `NASA POWER Daily archive: ${earliest} to ${latest} UTC. Select up to ten years per chart request; available dates depend on the selected locations.`;
+  return true;
+}
+
+async function run(){
+  const btn = $('go');
+  const sel = [...S.sel[S.mode]];
+  if(!sel.length){ banner('Select at least one location.'); return }
+  const start = $('start').value, end = $('end').value;
+  if(S.mode !== 'demo' && start > end){ banner('Start date must be on or before the end date.'); return }
+  btn.disabled = true; btn.textContent = S.mode === 'live' ? 'Requesting NASA POWER…' : S.mode === 'historical' ? 'Loading NASA archive…' : 'Analyzing demo…'; banner('');
+  try{
+    const q = new URLSearchParams({mode:S.mode, start_date:start, end_date:end});
+    sel.forEach(id => q.append('stations', id));
+    const d = await api('/api/dashboard?' + q);
+    if(S.mode === 'historical'){
+      try{ d.prediction = await api('/api/predictions/next-day?location_id=cairo-eg'); }
+      catch(err){ d.predictionError = err.message; }
+    }
+    S.data = d; S.dataMode = d.mode;
+    drawMap(d.stations); drawCharts(d); drawGraphSummaries(d); drawPrediction(d); drawTable(d); drawIncidents(); drawKPIs(d);
+    const simulated = d.mode === 'demo' || d.is_simulated;
+    setSource(simulated ? 'sim' : 'ok', simulated ? 'SIMULATED demonstration data' : d.mode === 'historical' ? 'NASA POWER · historical archive' : 'NASA POWER · online request');
+    if(!d.stations.length) banner(['No usable observations were returned for this selection.', ...(d.notes || [])].map(esc).join('<br>'));
+    else if(d.notes.length) banner(d.notes.map(esc).join('<br>'));
+    const freshness = d.mode === 'historical'
+      ? `Archive retrieval completed ${esc(d.retrieved_at || 'time not recorded')}; archived observations remain distinct from predictions.`
+      : d.retrieved_at
+        ? `NASA POWER request completed ${esc(d.retrieved_at)}.`
+        : 'No live retrieval time is available; values shown are from the fixed simulated demonstration file.';
+    const sourceMeta = d.source_metadata || {};
+    const apiVersion = sourceMeta.api_name
+      ? `${esc(sourceMeta.api_name)}${sourceMeta.api_version ? ' ' + esc(sourceMeta.api_version) : ''}`
+      : (simulated ? 'Offline simulated dataset' : 'NASA POWER daily product');
+    const productNames = Array.isArray(sourceMeta.source_products) && sourceMeta.source_products.length
+      ? ` · source labels: ${sourceMeta.source_products.map(esc).join(', ')}` : '';
+    const dateWindow = d.range ? `UTC day range: ${esc(d.range.start)} to ${esc(d.range.end)}.` : '';
+    $('foot').innerHTML = `${esc(d.disclaimer)}<br>Threshold set: ${esc(d.threshold_set)} · ${apiVersion}${productNames}<br>${dateWindow} ${freshness}<br>Historical values are daily NASA POWER grid-cell estimates, not station observations. Statistical model estimates are not operational forecasts. Incident actions are simulated and do not contact emergency services.`;
+  }catch(err){
+    setSource('bad', 'Error');
+    $('graphSummaries').innerHTML = '<div class="summary-empty">The selected data could not be loaded; no new summary was generated.</div>';
+    drawPrediction({mode:S.mode,predictionError:err.message});
+    banner('Request failed: ' + esc(err.message), true);
+  }
+  btn.disabled = false; btn.textContent = 'Analyze';
+}
+
+async function boot(){
+  const end = new Date(); end.setDate(end.getDate() - 2);
+  const start = new Date(end); start.setDate(start.getDate() - 13);
+  $('start').value = fmtDate(start); $('end').value = fmtDate(end);
+  setInterval(() => $('clock').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' · local', 1000);
+
+  document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = async () => {
+    document.querySelectorAll('#modeSeg button').forEach(x => {x.classList.remove('on'); x.setAttribute('aria-pressed','false')});
+    b.classList.add('on'); b.setAttribute('aria-pressed','true'); S.mode = b.dataset.m;
+    if(S.mode === 'historical' && !S.sel.historical.size){
+      S.all.filter(s => S.historyIds.has(s.id)).slice(0,3).forEach(s => S.sel.historical.add(s.id));
+    }
+    drawChips();
+    if(S.mode === 'historical') setHistoricalDateWindow();
+    run();
+  });
+  $('go').onclick = run;
+  $('start').addEventListener('change', applyFiltersSoon);
+  $('end').addEventListener('change', applyFiltersSoon);
+
+  initMap(); initCharts();
+  try{
+    S.all = (await api('/api/stations', {}, 8000)).stations;
+  }catch(e){
+    setSource('bad', 'Backend offline');
+    banner('Cannot reach the backend. In PowerShell run <code>uvicorn api:app --reload --port 8000</code> and refresh this page.', true);
+    return;
+  }
+  try{
+    S.historyAvailability = await api('/api/history/availability', {}, 12000);
+    S.historyIds = new Set((S.historyAvailability.coverage || [])
+      .filter(item => item.min_date && item.max_date).map(item => item.location_id));
+  }catch(e){
+    S.historyAvailability = null; S.historyIds = new Set();
+  }
+  S.all.forEach((s,i) => S.colors[s.id] = PALETTE[i % PALETTE.length]);
+  S.all.slice(0,3).forEach(s => S.sel.live.add(s.id));
+  S.all.filter(s => s.in_demo).forEach(s => S.sel.demo.add(s.id));
+  S.all.filter(s => S.historyIds.has(s.id)).slice(0,3).forEach(s => S.sel.historical.add(s.id));
+  drawChips(); run();
+}
+boot();
+</script>
+</body>
+</html>

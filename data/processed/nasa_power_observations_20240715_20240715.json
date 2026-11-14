@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "source": "NASA_POWER_DAILY",
+    "retrieved_at": "2026-11-13T17:46:06Z",
+    "start_date": "20240715",
+    "end_date": "20240715",
+    "record_count": 2,
+    "is_simulated": false
+  },
+  "observations": [
+    {
+      "location_id": "phoenix-us",
+      "location_name": "Phoenix, USA",
+      "latitude": 33.4484,
+      "longitude": -112.074,
+      "temperature_c": 34.35,
+      "humidity_pct": 30.58,
+      "wind_speed_kmh": 13.61,
+      "rainfall_mm": 2.77,
+      "observed_at": "2024-07-15T00:00:00Z",
+      "data_source": "NASA_POWER_DAILY",
+      "is_simulated": false,
+      "note": "Official NASA POWER daily satellite/model analysis (MERRA-2)."
+    },
+    {
+      "location_id": "cairo-eg",
+      "location_name": "Cairo, Egypt",
+      "latitude": 30.0444,
+      "longitude": 31.2357,
+      "temperature_c": 31.13,
+      "humidity_pct": 46.36,
+      "wind_speed_kmh": 15.48,
+      "rainfall_mm": 0.0,
+      "observed_at": "2024-07-15T00:00:00Z",
+      "data_source": "NASA_POWER_DAILY",
+      "is_simulated": false,
+      "note": "Official NASA POWER daily satellite/model analysis (MERRA-2)."
+    }
+  ]
+}

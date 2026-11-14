@@ -1,0 +1,29 @@
+flowchart TB
+    UI["Browser dashboard<br/>controls • map • latest-value table • four charts"] --> API["FastAPI<br/>api.py · /api/dashboard"]
+    API --> SVC["dashboard_service.py<br/>selected locations · UTC date window<br/>31-day cap · 10-minute / 128-entry memory cache"]
+
+    SVC -->|Live mode| NASA["NASA POWER Daily point API<br/>T2M · RH2M · WS10M · PRECTOTCORR<br/>UTC · one request per selected point"]
+    NASA --> NORM["Normalize NASA records<br/>WS10M: m/s × 3.6 → km/h<br/>fill and missing values → null"]
+    SVC -->|Demo mode| DEMO["data/processed/demo_observations.json<br/>7 simulated rows · not NASA measurements"]
+    SVC -.->|No usable live rows| DEMO
+
+    NORM --> VALID["Shared validation<br/>schema · ranges · timezone · missingness"]
+    DEMO --> VALID
+    VALID --> RISK["analysis.py<br/>deterministic prototype-v1 thresholds<br/>not official warnings or forecasts"]
+    RISK --> INCIDENTS["IncidentStore<br/>process memory · live/demo stores separate<br/>PERSIST_INCIDENTS = false"]
+    RISK --> PAYLOAD["One JSON dashboard response<br/>aligned dates · missing values remain null"]
+    INCIDENTS --> PAYLOAD
+    PAYLOAD --> UI
+    CARTO["CARTO basemap tiles<br/>map background only · not NASA data"] --> UI
+
+    SNAP["Saved NASA JSON snapshots<br/>historical examples only<br/>not read by the active live route"]
+    DB["No database / SQL schema<br/>no durable live-observation store"]
+
+    classDef app fill:#0E1524,stroke:#22D3EE,color:#E6ECF8,stroke-width:1px;
+    classDef nasa fill:#0B2732,stroke:#34D399,color:#E6ECF8,stroke-width:2px;
+    classDef demo fill:#352819,stroke:#FBBF24,color:#FFF5D6,stroke-width:2px;
+    classDef note fill:#171D2D,stroke:#8190AD,color:#D5DEEF,stroke-dasharray:4 3;
+    class UI,API,SVC,NORM,VALID,RISK,INCIDENTS,PAYLOAD,CARTO app;
+    class NASA nasa;
+    class DEMO demo;
+    class SNAP,DB note;
