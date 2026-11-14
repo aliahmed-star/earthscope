@@ -19,3 +19,7 @@ data/raw/*
 data/raw/nasa_power_history/*
 !data/raw/nasa_power_history/*.json.gz
 .streamlit/secrets.toml
+
+# SQLite temp files
+*.sqlite3-wal
+*.sqlite3-shm

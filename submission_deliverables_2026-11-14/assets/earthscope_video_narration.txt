@@ -1,0 +1,3 @@
+EarthScope’s SQLite archive stores 333,860 NASA POWER observations across five cities, 1981 to 2026. Cairo annual-mean slopes: plus 0.093 degrees per year for 2016–2025; plus 0.032 for 1981–2025. A tested model estimates next-day Cairo temperature, with held-out error 0.95 degrees versus 1.04 for persistence. This is not an operational weather forecast or disaster prediction. Incident levels remain prototype thresholds.
+
+Disclosure: AI-generated narration using a synthetic studio voice (Charon).
