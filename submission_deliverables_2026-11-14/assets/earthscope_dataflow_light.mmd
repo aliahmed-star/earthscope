@@ -1,33 +1,45 @@
 flowchart TB
-    START["User selects live, historical, or simulated mode"] --> API["FastAPI · api.py<br/>dashboard, archive, summaries, model APIs"]
-    API --> LIVEQ["Live dashboard request<br/>31-day cap · short-lived response cache"]
-    LIVEQ --> NASA["NASA POWER Daily point API<br/>T2M · RH2M · WS10M · PRECTOTCORR · UTC"]
-    NASA --> NORM["Normalize/validate daily series<br/>wind: m/s × 3.6 → km/h · missing → null"]
-    NORM --> LIVE["Live values and prototype threshold labels"]
+    START["User selects live, historical, or simulated mode"]
+    API["FastAPI · api.py<br/>dashboard, archive, climate and model APIs"]
+    LIVEQ["Live dashboard request<br/>31-day cap · short-lived response cache"]
+    NASA["NASA POWER Daily point API<br/>T2M · RH2M · WS10M · PRECTOTCORR · UTC"]
+    NORM["Normalize/validate daily series<br/>wind: m/s × 3.6 → km/h · missing → null"]
+    LIVE["Live values and prototype threshold labels"]
+    DEMO["Labelled simulated demo data"]
+    RULES["Prototype thresholds only<br/>not official warnings or disaster predictions"]
+    INC["Prototype incident panel<br/>local demo actions only"]
+    INGEST["Retry-safe NASA history ingestion<br/>71 requests · source responses retained"]
+    DB["SQLite schema v3 archive<br/>446,364 daily-variable observations<br/>12 countries · four variables<br/>zero missing normalized values"]
+    QUERY["Historical query by location, variable,<br/>UTC date range and daily resolution"]
+    SUM["Deterministic summaries<br/>calculated from plotted points"]
+    CMP["Shared-range comparison<br/>annual and seasonal summaries<br/>extrema · completeness · rankings"]
+    TREND["Annual trends<br/>complete calendar years only<br/>descriptive OLS rate"]
+    SUITE["48 one-day models<br/>12 locations × 4 variables<br/>chronological splits · gated intervals"]
+    HIST["Historical dashboard response"]
+    RENDER["Browser renders map, table, four charts,<br/>coverage, comparison, trends and estimates"]
+    CARTO["CARTO tiles<br/>basemap only · not NASA data"]
 
-    INGEST["Retry-safe NASA history ingestion<br/>50 requests · source responses retained"] --> DB["SQLite v2 archive<br/>333,860 daily-variable observations<br/>five cities · four variables<br/>1981-01-01 to 2026-09-14"]
-    DB --> QUERY["Historical query by location, variable,<br/>UTC date range and daily resolution"]
-    QUERY --> SUM["Deterministic summaries<br/>calculated from plotted points"]
-    QUERY --> MODEL["Cairo T2M ridge regression<br/>one-day statistical estimate<br/>chronological test evaluation"]
-    QUERY --> HIST["Historical dashboard response"]
-    SUM --> HIST
-    MODEL --> HIST
-
-    DEMO["Labelled simulated demo data"] --> RULES["Prototype thresholds only<br/>not official warnings or disaster predictions"]
-    NORM --> RULES
-    RULES --> INC["Prototype incident panel<br/>local demo actions only"]
-    LIVE --> RENDER["Browser renders map, table,<br/>four charts, summaries and estimate"]
+    START --> API --> LIVEQ
+    LIVEQ --> NASA --> NORM --> LIVE
+    API --> DEMO --> RULES
+    NORM --> RULES --> INC
+    NASA -->|History retained| INGEST --> DB --> QUERY
+    API -->|Archive mode| QUERY
+    QUERY --> SUM --> HIST
+    QUERY --> CMP --> TREND --> HIST
+    QUERY --> SUITE --> HIST
+    LIVE --> RENDER
     INC --> RENDER
     HIST --> RENDER
-    CARTO["CARTO tiles<br/>basemap only · not NASA data"] -.-> RENDER
+    CARTO -.-> RENDER
 
     classDef app fill:#F4F7FA,stroke:#0B4F6C,color:#1B2433,stroke-width:1px;
     classDef nasa fill:#E4F1EC,stroke:#0F766E,color:#123A34,stroke-width:2px;
     classDef demo fill:#FDF3DE,stroke:#9A5B00,color:#4A2E00,stroke-width:2px;
     classDef store fill:#E8F1FD,stroke:#2B5E9A,color:#18314F,stroke-width:2px;
     classDef note fill:#FFFFFF,stroke:#8A97A8,color:#3D4757,stroke-dasharray:4 3;
-    class START,API,LIVEQ,NORM,LIVE,QUERY,SUM,MODEL,HIST,RULES,INC,RENDER app;
+    class START,API,LIVEQ,NORM,LIVE,QUERY,SUM,CMP,TREND,SUITE,HIST,INC,RENDER app;
     class NASA nasa;
-    class DEMO demo;
+    class DEMO,RULES demo;
     class DB,INGEST store;
     class CARTO note;

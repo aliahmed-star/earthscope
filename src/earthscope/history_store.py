@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import calendar
 import sqlite3
 import threading
 import uuid
@@ -20,6 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "historical" / "earthscope_power.sqlite3"
 MIGRATION_PATH = PROJECT_ROOT / "data" / "migrations" / "001_historical_archive.sql"
 PROVENANCE_MIGRATION_PATH = PROJECT_ROOT / "data" / "migrations" / "002_normalize_history_provenance.sql"
+COUNTRY_MIGRATION_PATH = PROJECT_ROOT / "data" / "migrations" / "003_location_country_metadata.sql"
 DATASET_ID = "NASA_POWER_DAILY"
 
 VARIABLES = (
@@ -96,6 +98,11 @@ class HistoryStore:
                 self._connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
                 self._connection.execute("VACUUM")
                 self._connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        schema_version = int(self._connection.execute("PRAGMA user_version").fetchone()[0])
+        if schema_version < 3:
+            if not COUNTRY_MIGRATION_PATH.exists():
+                raise FileNotFoundError(f"History country migration not found: {COUNTRY_MIGRATION_PATH}")
+            self._connection.executescript(COUNTRY_MIGRATION_PATH.read_text(encoding="utf-8"))
         self._seed_reference_data()
 
     def close(self) -> None:
@@ -152,6 +159,12 @@ class HistoryStore:
                    location_name=excluded.location_name, latitude=excluded.latitude,
                    longitude=excluded.longitude, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ', 'now')""",
                 (str(location["location_id"]), str(location["location_name"]), latitude, longitude),
+            )
+            country_name = str(location.get("country_name") or "")
+            country_code = str(location.get("country_code") or "").upper()
+            self._connection.execute(
+                """UPDATE locations SET country_name=?, country_code=? WHERE location_id=?""",
+                (country_name, country_code, str(location["location_id"])),
             )
 
     def latest_observed_date(self, location_id: str, variable: str, dataset_id: str = DATASET_ID) -> Optional[str]:
@@ -251,11 +264,13 @@ class HistoryStore:
             "FROM ingestion_runs ORDER BY COALESCE(finished_at, started_at) DESC LIMIT 1"
         ).fetchone()
         location_rows = self._connection.execute(
-            "SELECT location_id, location_name, latitude, longitude FROM locations ORDER BY location_id"
+            "SELECT location_id, location_name, country_name, country_code, latitude, longitude "
+            "FROM locations ORDER BY location_id"
         ).fetchall()
         coverage = []
         for loc in location_rows:
             variables = []
+            common_complete_years = None
             for code, canonical_name, unit, _raw_unit, _description in VARIABLES:
                 row = self._connection.execute(
                     """SELECT MIN(observed_on) AS min_date, MAX(observed_on) AS max_date,
@@ -263,19 +278,28 @@ class HistoryStore:
                        FROM observations WHERE location_id=? AND variable_code=? AND resolution='daily'""",
                     (loc["location_id"], code),
                 ).fetchone()
+                year_coverage = self._complete_years(loc["location_id"], code)
+                complete_years = [item["year"] for item in year_coverage if item["complete"]]
                 variables.append({
                     "variable_code": code, "canonical_name": canonical_name, "unit": unit,
                     "min_date": row["min_date"], "max_date": row["max_date"],
                     "record_count": int(row["record_count"]), "missing_count": int(row["missing_count"] or 0),
+                    "complete_years": complete_years, "year_coverage": year_coverage,
                 })
+                years = set(complete_years)
+                common_complete_years = years if common_complete_years is None else common_complete_years & years
             all_dates = self._connection.execute(
                 "SELECT MIN(observed_on), MAX(observed_on) FROM observations WHERE location_id=?",
                 (loc["location_id"],),
             ).fetchone()
+            common_complete_years = sorted(common_complete_years or set())
             coverage.append({
                 "location_id": loc["location_id"], "name": loc["location_name"],
+                "country_name": loc["country_name"], "country_code": loc["country_code"],
                 "lat": loc["latitude"], "lon": loc["longitude"],
                 "min_date": all_dates[0], "max_date": all_dates[1], "variables": variables,
+                "common_complete_years": common_complete_years,
+                "qualified_10_complete_years": len(common_complete_years) >= 10,
             })
         latest_run = dict(last_run) if last_run else None
         return {
@@ -284,6 +308,34 @@ class HistoryStore:
             "latest_retrieved_at": latest_run.get("finished_at") if latest_run else None,
             "latest_ingestion_run": latest_run,
         }
+
+    def _complete_years(self, location_id: str, variable_code: str) -> list[dict[str, Any]]:
+        """Return exact calendar-year row/value coverage; no date gaps are imputed."""
+        rows = self._connection.execute(
+            """SELECT substr(observed_on, 1, 4) AS year, COUNT(*) AS row_count,
+                      COUNT(DISTINCT observed_on) AS distinct_days,
+                      COUNT(normalized_value) AS valid_count
+               FROM observations WHERE location_id=? AND variable_code=? AND resolution='daily'
+               GROUP BY substr(observed_on, 1, 4) ORDER BY year""",
+            (location_id, variable_code),
+        ).fetchall()
+        result = []
+        for row in rows:
+            try:
+                year = int(row["year"])
+            except (TypeError, ValueError):
+                continue
+            expected = 366 if calendar.isleap(year) else 365
+            valid_count = int(row["valid_count"])
+            row_count = int(row["row_count"])
+            distinct_days = int(row["distinct_days"])
+            result.append({
+                "year": year, "expected_days": expected, "record_count": row_count,
+                "valid_days": valid_count,
+                "completeness_pct": round(100.0 * valid_count / expected, 3),
+                "complete": row_count == expected and distinct_days == expected and valid_count == expected,
+            })
+        return result
 
     def query_observations(
         self, location_id: str, variable: str, start_date: str, end_date: str,

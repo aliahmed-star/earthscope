@@ -1,12 +1,14 @@
 # EarthScope Historical Data, Model, and Summary Implementation Report
 
+> **Status note (14 November 2026, later the same day):** this document records the five-location milestone that first introduced the archive, the Cairo model, and plotted-data summaries. The project has since been upgraded in place to **12 countries and 446,364 observations**, with schema v3, country comparison, annual trends, and a 48-series estimate suite. Where this document says 50 requests, 333,860 rows, five locations, 20 series, or 131 tests, read the current figures as 71 requests, 446,364 rows, 12 locations, 48 series, and 138 tests. Current state: `README.md`, `docs/model_evaluation.md`, and `submission_deliverables_2026-11-14/EARTHSCOPE_NASA_DATA_AUDIT.md`.
+
 EarthScope was enhanced in a separate project copy; the preserved source project was not modified. The updated project includes the verified NASA archive, its compressed source responses, a trained model and evaluation metadata, the historical dashboard/API changes, tests, documentation, and the earlier submission deliverables.
 
 ## NASA data retrieved and stored
 
 The ingestion used the NASA POWER Daily Point API at `https://power.larc.nasa.gov/api/temporal/daily/point`, with the RE community, JSON output, and UTC daily keys. NASA documents the daily endpoint and its time-standard options [1]. The parameter names and units were checked against NASA's parameter dictionary [2]. The response API version was `v2.10.3`.
 
-The completed live backfill used 50 requests, each spanning no more than five calendar years. SQLite contains 333,860 observations covering 1981-01-01 through 2026-09-14 at five locations: Cairo, Phoenix, Tokyo, Sydney, and Manila. Each of the 20 location/variable series has 16,693 daily rows, with zero NULL normalized values:
+At that milestone the live backfill used 50 requests, each spanning no more than five calendar years, and SQLite contained 333,860 observations covering 1981-01-01 through 2026-09-14 at five locations: Cairo, Phoenix, Tokyo, Sydney, and Manila. Each of the 20 location/variable series had 16,693 daily rows, with zero NULL normalized values. The current archive is larger (446,364 observations, 12 locations, 48 series); the four variables are unchanged:
 
 - `T2M`: temperature in °C.
 - `RH2M`: relative humidity in %.
@@ -56,8 +58,8 @@ The `GET /api/graph-summaries` result was checked against the `graph_summaries` 
 
 ## Verification performed
 
-- Baseline before implementation: 94 tests passed.
-- Final full suite: **131 passed** in 5.73 seconds.
+- Baseline before that implementation: 94 tests passed.
+- Suite at that milestone: **131 passed** in 5.73 seconds (current suite: 138 passed).
 - Python `compileall`: passed for the API, dashboard service, source package, and scripts.
 - Node `--check`: passed for the inline JavaScript extracted from `index.html`.
 - v1-to-v2 migration: tested on a staged history database and on the full archive; value queries and raw provenance remained available after migration.

@@ -133,6 +133,23 @@ footer{margin-top:22px;text-align:center;font-size:11px;color:var(--muted);line-
 .source-panel summary{color:var(--text);cursor:pointer;font-weight:600}
 .source-panel p{margin-top:8px;max-width:1100px}
 .source-panel a{color:var(--cyan)}
+.upgrade-panel{margin-top:14px;padding-bottom:14px}
+.upgrade-intro{padding:12px 18px;color:var(--muted);font-size:12px;line-height:1.6}
+.upgrade-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
+.upgrade-controls label{display:block;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.upgrade-controls input,.upgrade-controls select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:12px}
+.upgrade-countries{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:7px;padding:12px 18px}
+.upgrade-country{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:12px}
+.upgrade-country input{accent-color:var(--cyan)}
+.upgrade-summary{padding:10px 18px;color:var(--muted);font-size:12px;line-height:1.6}
+.upgrade-table{padding:0 14px 12px;overflow:auto}
+.upgrade-table table{min-width:820px}
+.upgrade-table th,.upgrade-table td{text-align:left;vertical-align:top}
+.upgrade-table td{font-family:Inter,sans-serif;font-size:12px}
+.upgrade-chart{height:300px;padding:12px 18px 18px}
+.quality-badge{display:inline-block;padding:2px 7px;border-radius:999px;background:rgba(52,211,153,.12);color:#34d399;font-size:10px}
+.quality-badge.warn{background:rgba(251,191,36,.12);color:#fbbf24}
+.upgrade-note{padding:0 18px 10px;color:var(--muted);font-size:11px;line-height:1.5}
 
 @media(max-width:1000px){.main,.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){.wrap{padding:14px 12px 28px}.controls{align-items:stretch;padding:12px}.controls>.field,.controls>.btn{width:100%}.dates input{min-width:0;width:50%}.seg{width:100%}.seg button{flex:1;padding:7px 8px}.kpis{gap:8px}.kpi{padding:12px}.kpi .v{font-size:24px}#map{height:360px}.incidents{height:auto;max-height:460px}.map-legend{gap:6px;font-size:10px;padding:5px 7px}}
@@ -197,6 +214,41 @@ footer{margin-top:22px;text-align:center;font-size:11px;color:var(--muted);line-
 <section class="card insight-card"><h2>What the selected graphs show <span id="summarySub">Calculated from plotted observations</span></h2><div class="insight-grid" id="graphSummaries" aria-live="polite"><div class="summary-empty">Summaries will appear when data is loaded.</div></div></section>
 <section class="card prediction-card" id="predictionPanel" hidden><h2>One-day model estimate <span id="predictionStatus">NASA POWER daily input</span></h2><div class="prediction-body" id="predictionBody">Loading model result…</div></section>
 
+<section class="card upgrade-panel" id="coveragePanel">
+  <h2>Country-location archive coverage <span id="coverageSummary">Checking stored records…</span></h2>
+  <div class="upgrade-intro">Coverage is checked from valid daily records in SQLite, not inferred from the requested API dates. Each country is represented by a NASA POWER grid-cell estimate at one named city coordinate, not a country-wide average. A country qualifies only when all four main variables have at least ten shared, fully valid calendar years.</div>
+  <div class="upgrade-table" id="coverageTable"><div class="summary-empty">Loading archive coverage…</div></div>
+</section>
+
+<section class="card upgrade-panel" id="comparisonPanel">
+  <h2>Country comparison <span>Shared UTC range · same NASA POWER archive</span></h2>
+  <div class="upgrade-intro">Compare daily gridded values at the listed city coordinates. Temperature, humidity, and wind are compared as annual means; precipitation is compared as annual totals. Seasonal labels use meteorological months by hemisphere.</div>
+  <div class="upgrade-controls">
+    <div><label for="compareVariable">Variable</label><select id="compareVariable"><option value="T2M">Temperature · °C</option><option value="RH2M">Relative humidity · %</option><option value="WS10M">Wind speed · km/h</option><option value="PRECTOTCORR">Precipitation · annual mm</option></select></div>
+    <div><label for="compareStart">From (UTC)</label><input id="compareStart" type="date" value="2015-01-01"></div>
+    <div><label for="compareEnd">Through (UTC)</label><input id="compareEnd" type="date" value="2025-12-31"></div>
+    <button class="btn" id="compareRun" type="button">Compare selected</button>
+  </div>
+  <div class="upgrade-countries" id="compareCountries"><div class="summary-empty">Country locations will appear after coverage loads.</div></div>
+  <div class="upgrade-summary" id="compareInsights">Select at least two countries and a shared date range.</div>
+  <div class="upgrade-chart"><canvas id="comparisonChart" aria-label="Annual values and fitted descriptive trends for selected city-coordinate records"></canvas></div>
+  <div class="upgrade-table" id="comparisonTable"><div class="summary-empty">Comparison results will appear here.</div></div>
+</section>
+
+<section class="card upgrade-panel" id="trendsPanel">
+  <h2>Historical climate trends <span>Annual variability and descriptive rates</span></h2>
+  <div class="upgrade-intro">Trend lines are ordinary least-squares fits to complete calendar-year aggregates from the selected range. Rates are descriptive, not causal, and no statistical-significance claim is made. Ten or eleven years is a limited record for interpreting long-term climate change.</div>
+  <div class="upgrade-summary" id="trendSummary">Run a comparison to calculate trends from the same selected records.</div>
+  <div class="upgrade-table" id="trendTable"><div class="summary-empty">No trend calculation has been run yet.</div></div>
+</section>
+
+<section class="card upgrade-panel" id="modelSuitePanel">
+  <h2>One-day archive-origin estimates <span>Historical evaluation; not operational forecasts</span></h2>
+  <div class="upgrade-intro">The model suite evaluates each available location-variable series against persistence and a same-date-last-year baseline on identical future test dates. Method choice uses an earlier selection year; uncertainty uses a separate calibration period and is shown only when held-out interval coverage meets its stated rule. These estimates do not predict disasters.</div>
+  <div class="upgrade-controls"><button class="btn" id="loadEstimates" type="button">Load estimates for selected countries</button><span id="modelSuiteStatus" class="muted">Model evaluation bundle loads when requested.</span></div>
+  <div class="upgrade-table" id="modelSuiteTable"><div class="summary-empty">Select locations in the comparison panel, then load their one-day estimates.</div></div>
+</section>
+
 <details class="source-panel"><summary>About the data and risk classifications</summary><p>NASA POWER provides daily gridded environmental data for the selected coordinates; these are not in-situ weather-station observations. The dashboard requests T2M (°C), RH2M (%), WS10M (m/s converted to km/h), and PRECTOTCORR (mm/day), with daily dates requested in UTC. Parameter products and source datasets can vary. See the <a href="https://power.larc.nasa.gov/docs/services/api/temporal/daily/" target="_blank" rel="noopener noreferrer">NASA POWER Daily API documentation</a>, <a href="https://power.larc.nasa.gov/docs/tutorials/parameters/" target="_blank" rel="noopener noreferrer">parameter dictionary</a>, and <a href="https://power.larc.nasa.gov/docs/referencing/" target="_blank" rel="noopener noreferrer">NASA POWER referencing guide</a>. Risk levels use prototype rules and are not official warnings or validated disaster predictions. Incident actions only change a local demonstration status; they do not contact emergency services.</p></details>
 <footer id="foot">GEOSTORM · EARTHSCOPE</footer>
 </main>
@@ -213,7 +265,8 @@ const GRAY = '#64748b';
 
 const S = {mode:'live', all:[], historyIds:new Set(), historyAvailability:null,
            sel:{live:new Set(), demo:new Set(), historical:new Set()}, colors:{}, charts:{}, stations:{},
-           deck:null, data:null, dataMode:'live'};
+           deck:null, data:null, dataMode:'live', climateCoverage:null,
+           comparisonSelection:new Set(), comparisonChart:null};
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -304,6 +357,14 @@ function initCharts(){
       elements:{line:{tension:.35, borderWidth:2}}
     }});
   });
+  S.comparisonChart = new Chart($('comparisonChart'), {type:'line', data:{labels:[],datasets:[]}, options:{
+    responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:14}},
+      tooltip:{backgroundColor:'#121b2e',borderColor:'#1c2740',borderWidth:1,padding:10,titleColor:'#e6ecf8',bodyColor:'#cbd5e1'}},
+    scales:{x:{title:{display:true,text:'Calendar year (UTC)'},grid:{color:'rgba(255,255,255,.04)'},ticks:{maxTicksLimit:12}},
+      y:{title:{display:true,text:'Annual value'},grid:{color:'rgba(255,255,255,.06)'}}},
+    elements:{line:{tension:.2,borderWidth:2}}
+  }});
 }
 function drawCharts(d){
   const ids = Object.keys(d.series);
@@ -551,6 +612,131 @@ function setHistoricalDateWindow(){
   return true;
 }
 
+function archiveLocationName(item){return item.name || item.location_name || item.location_id}
+function renderArchiveCoverage(){
+  const data=S.climateCoverage; if(!data) return;
+  $('coverageSummary').textContent=`${data.qualified_country_count}/${data.country_count} countries qualify · ${Number(data.total_observation_rows||0).toLocaleString()} stored rows`;
+  const rows=(data.coverage||[]).map(item=>{
+    const years=(item.common_complete_years||[]);
+    const quality=(item.variables||[]).map(v=>`${esc(v.variable_code)} ${v.complete_years?.length||0} full years · ${Number(v.missing_count||0).toLocaleString()} missing`).join('<br>');
+    const badge=item.qualified_10_complete_years?'<span class="quality-badge">QUALIFIED</span>':'<span class="quality-badge warn">LIMITED</span>';
+    return `<tr><td>${esc(item.country_name||'Unspecified')}<br><span class="muted">${badge}</span></td><td>${esc(archiveLocationName(item))}<br><span class="muted">${Number(item.lat).toFixed(4)}, ${Number(item.lon).toFixed(4)}</span></td><td>${esc(item.min_date||'—')} – ${esc(item.max_date||'—')}</td><td>${years.length?`${years[0]}–${years[years.length-1]} (${years.length} shared years)`:'No common complete years'}</td><td>${quality}</td></tr>`;
+  }).join('');
+  $('coverageTable').innerHTML=`<table><thead><tr><th>Country / status</th><th>NASA POWER point</th><th>Stored date span</th><th>Complete shared years</th><th>Per-variable valid coverage</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderComparisonChoices(){
+  const coverage=S.climateCoverage?.coverage||[];
+  const qualified=coverage.filter(x=>x.qualified_10_complete_years);
+  if(!S.comparisonSelection.size){
+    for(const id of ['cairo-eg','phoenix-us']) if(qualified.some(x=>x.location_id===id)) S.comparisonSelection.add(id);
+    if(S.comparisonSelection.size<2) qualified.slice(0,2).forEach(x=>S.comparisonSelection.add(x.location_id));
+  }
+  $('compareCountries').innerHTML=coverage.map(item=>{
+    const eligible=!!item.qualified_10_complete_years;
+    return `<label class="upgrade-country"><input type="checkbox" data-compare-id="${esc(item.location_id)}" ${S.comparisonSelection.has(item.location_id)?'checked':''} ${eligible?'':'disabled'}><span>${esc(item.country_name||'Unspecified')} · ${esc(archiveLocationName(item))}${eligible?'':' (under 10 complete years)'}</span></label>`;
+  }).join('');
+  $('compareCountries').querySelectorAll('[data-compare-id]').forEach(el=>el.addEventListener('change',()=>{
+    if(el.checked) S.comparisonSelection.add(el.dataset.compareId); else S.comparisonSelection.delete(el.dataset.compareId);
+  }));
+}
+function fmtValue(value,unit,digits=2){return value==null||!Number.isFinite(Number(value))?'not available':`${Number(value).toFixed(digits)} ${unit}`}
+function comparisonName(id){const item=(S.climateCoverage?.coverage||[]).find(x=>x.location_id===id);return item?`${item.country_name} · ${archiveLocationName(item)}`:id}
+function drawComparisonChart(data){
+  const years=[...new Set(data.locations.flatMap(loc=>loc.annual_series.map(x=>x.year)))].sort((a,b)=>a-b);
+  const palette=['#22d3ee','#a78bfa','#34d399','#fbbf24','#f472b6','#60a5fa','#fb923c','#2dd4bf','#f87171','#c084fc','#a3e635','#38bdf8'];
+  const datasets=[];
+  data.locations.forEach((loc,index)=>{
+    const color=palette[index%palette.length], byYear=new Map(loc.annual_series.filter(point=>point.complete_calendar_year).map(point=>[point.year,point.value]));
+    datasets.push({label:`${loc.country_name} · ${loc.location_name}`,data:years.map(y=>byYear.get(y)??null),borderColor:color,backgroundColor:color,pointRadius:3,spanGaps:false});
+    const complete=loc.annual_series.filter(p=>p.complete_calendar_year&&p.value!=null);
+    if(loc.trend?.status==='computed'&&complete.length>=2){
+      const mx=complete.reduce((a,p)=>a+p.year,0)/complete.length,my=complete.reduce((a,p)=>a+p.value,0)/complete.length;
+      datasets.push({label:`OLS · ${loc.country_name}`,data:years.map(y=>complete.some(p=>p.year===y)?my+Number(loc.trend.slope_per_year)*(y-mx):null),borderColor:color,borderDash:[6,4],borderWidth:1.5,pointRadius:0,spanGaps:false});
+    }
+  });
+  const isRain=data.variable==='PRECTOTCORR';
+  S.comparisonChart.data.labels=years; S.comparisonChart.data.datasets=datasets;
+  S.comparisonChart.options.scales.y.title.text=isRain?'Annual precipitation total (mm/year)':`Annual mean (${data.unit})`;
+  S.comparisonChart.options.scales.y.beginAtZero=isRain;
+  S.comparisonChart.update();
+}
+function drawComparisonTable(data){
+  const annualUnit=data.variable==='PRECTOTCORR'?'mm/year':data.unit;
+  const meanRanks=new Map(data.ranked_location_ids.map((id,index)=>[id,index+1]));
+  const trendRanks=new Map(data.trend_ranked_location_ids.map((id,index)=>[id,index+1]));
+  const rows=data.locations.map(loc=>{
+    const completeAnnual=loc.annual_series.filter(p=>p.complete_calendar_year&&p.value!=null);
+    const annualMin=completeAnnual.length?completeAnnual.reduce((a,b)=>Number(a.value)<=Number(b.value)?a:b):null;
+    const annualMax=completeAnnual.length?completeAnnual.reduce((a,b)=>Number(a.value)>=Number(b.value)?a:b):null;
+    const average=fmtValue(loc.mean_complete_year_value,annualUnit);
+    const annualRange=annualMin&&annualMax?`${fmtValue(annualMin.value,annualUnit)} (${annualMin.year}) to ${fmtValue(annualMax.value,annualUnit)} (${annualMax.year})`:'not available';
+    const seasonal=Object.entries(loc.seasonal_daily_means||{}).map(([season,item])=>`${season} ${fmtValue(item.mean_daily_value,data.unit)}`).join('<br>')||'not available';
+    const ranks=`${meanRanks.has(loc.location_id)?`mean rank ${meanRanks.get(loc.location_id)}`:'mean unranked'}<br>${trendRanks.has(loc.location_id)?`trend magnitude rank ${trendRanks.get(loc.location_id)}`:'trend unranked'}`;
+    const slope=loc.trend?.slope_per_decade==null?'not available':`${Number(loc.trend.slope_per_decade).toFixed(3)} ${annualUnit}/decade`;
+    const change=loc.largest_consecutive_year_change?`${loc.largest_consecutive_year_change.from_year}→${loc.largest_consecutive_year_change.to_year}: ${fmtValue(loc.largest_consecutive_year_change.change,annualUnit)}`:'not available';
+    const max=loc.maximum_daily?`${fmtValue(loc.maximum_daily.value,data.unit)}<br><span class="muted">${esc(loc.maximum_daily.date)}</span>`:'not available';
+    const min=loc.minimum_daily?`${fmtValue(loc.minimum_daily.value,data.unit)}<br><span class="muted">${esc(loc.minimum_daily.date)}</span>`:'not available';
+    const coverage=`${Number(loc.completeness_pct||0).toFixed(1)}% · ${Number(loc.valid_days||0).toLocaleString()}/${Number(loc.requested_days||0).toLocaleString()} days`;
+    const warn=(loc.warnings||[]).map(esc).join('<br>');
+    return `<tr><td>${esc(loc.country_name)}<br><span class="muted">${esc(loc.location_name)}</span></td><td>${ranks}</td><td>${coverage}${warn?`<br><span class="muted">${warn}</span>`:''}</td><td>${average}<br><span class="muted">complete-year range: ${annualRange}</span></td><td>${seasonal}<br><span class="muted">seasonal mean daily value</span></td><td>${max}</td><td>${min}</td><td>${slope}</td><td>${change}</td></tr>`;
+  }).join('');
+  $('comparisonTable').innerHTML=`<table><thead><tr><th>Country / point</th><th>Mean / trend rank</th><th>Daily completeness</th><th>Mean complete-year value and range</th><th>Seasonal daily means</th><th>Maximum daily value</th><th>Minimum daily value</th><th>OLS rate / decade</th><th>Largest adjacent-year change</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function drawTrendTable(data){
+  $('trendSummary').textContent=`${data.label} · ${data.range.start}–${data.range.end}. Rates use only complete calendar years; annual value is ${data.annual_aggregation==='sum'?'a total':'a mean'}.`;
+  $('trendTable').innerHTML=`<table><thead><tr><th>Country / point</th><th>Complete annual values</th><th>OLS rate</th><th>First → last complete-year change</th><th>Largest adjacent-year change</th><th>Limits</th></tr></thead><tbody>${data.locations.map(loc=>{
+    const complete=loc.annual_series.filter(p=>p.complete_calendar_year&&p.value!=null);
+    const change=complete.length>1?complete[complete.length-1].value-complete[0].value:null;
+    const annualValues=complete.map(p=>Number(p.value));
+    const annualMean=annualValues.length?annualValues.reduce((a,b)=>a+b,0)/annualValues.length:null;
+    const annualSd=annualValues.length?Math.sqrt(annualValues.reduce((sum,value)=>sum+(value-annualMean)**2,0)/annualValues.length):null;
+    const annualUnit=data.variable==='PRECTOTCORR'?'mm/year':data.unit;
+    const annualRange=annualValues.length?`${Math.min(...annualValues).toFixed(2)}–${Math.max(...annualValues).toFixed(2)} ${annualUnit}; SD ${Number(annualSd).toFixed(2)}`:'none';
+    const trend=loc.trend?.slope_per_year==null?`Not estimated (${loc.complete_year_count}/10 complete years)`:`${Number(loc.trend.slope_per_year).toFixed(4)} ${data.variable==='PRECTOTCORR'?'mm/year per calendar year':`${data.unit}/year`} (${Number(loc.trend.slope_per_decade).toFixed(3)} per decade)`;
+    const annual=complete.length?`${complete[0].year}–${complete[complete.length-1].year} · ${complete.length} years<br><span class="muted">range ${annualRange}</span>`:'none';
+    const largest=loc.largest_consecutive_year_change?`${loc.largest_consecutive_year_change.from_year}→${loc.largest_consecutive_year_change.to_year}: ${Number(loc.largest_consecutive_year_change.change).toFixed(2)}`:'not available';
+    return `<tr><td>${esc(loc.country_name)}<br><span class="muted">${esc(loc.location_name)}</span></td><td>${annual}</td><td>${trend}</td><td>${fmtValue(change,data.variable==='PRECTOTCORR'?'mm/year':data.unit)}</td><td>${largest}</td><td>${(loc.warnings||[]).map(esc).join('<br>')||'No missing values in requested dates.'}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+async function runComparison(){
+  const ids=[...S.comparisonSelection], start=$('compareStart').value, end=$('compareEnd').value;
+  if(ids.length<2){$('compareInsights').textContent='Select at least two qualified country locations.';return}
+  if(!start||!end||start>end){$('compareInsights').textContent='Choose a valid shared date range.';return}
+  $('compareRun').disabled=true; $('compareRun').textContent='Calculating…';
+  try{
+    const q=new URLSearchParams({start_date:start,end_date:end,variable:$('compareVariable').value}); ids.forEach(id=>q.append('locations',id));
+    const data=await api('/api/climate/comparison?'+q.toString()); drawComparisonChart(data); drawComparisonTable(data); drawTrendTable(data);
+    const byId=new Map(data.locations.map(x=>[x.location_id,x]));
+    $('compareInsights').innerHTML=(data.insights||[]).map(item=>{
+      const loc=byId.get(item.location_id);
+      const insightUnit=item.kind==='largest_absolute_trend'?(data.variable==='PRECTOTCORR'?'mm/year per decade':`${data.unit} per decade`):item.kind==='highest_daily_maximum'?data.unit:(data.variable==='PRECTOTCORR'?'mm/year':data.unit);
+      const value=fmtValue(item.value,insightUnit);
+      const text=item.kind==='highest_average'?'Highest selected-period average':item.kind==='highest_daily_maximum'?'Highest observed daily maximum':'Largest absolute descriptive trend';
+      return `<div><b>${text}:</b> ${esc(loc?.country_name||'')} · ${esc(loc?.location_name||'')} — ${value}${item.date?` on ${esc(item.date)}`:''}.</div>`;
+    }).join('')+(data.caveats||[]).map(item=>`<div class="muted">${esc(item)}</div>`).join('')+`<div class="muted">${data.locations.length} locations · ${esc(data.range.start)}–${esc(data.range.end)} · all statistics calculated from stored observations.</div>`;
+  }catch(err){$('compareInsights').textContent='Comparison failed: '+err.message}
+  $('compareRun').disabled=false; $('compareRun').textContent='Compare selected';
+}
+async function loadModelEstimates(){
+  const ids=[...S.comparisonSelection];
+  if(!ids.length){$('modelSuiteStatus').textContent='Select one or more qualified locations first.';return}
+  const button=$('loadEstimates'); button.disabled=true; button.textContent='Loading estimates…';
+  try{
+    const q=new URLSearchParams(); ids.forEach(id=>q.append('locations',id));
+    const data=await api('/api/predictions/next-day/all?'+q.toString(),{},90000);
+    const rows=(data.predictions||[]).map(item=>{
+      const metric=item.test_metrics?.[item.chosen_method]||{};
+      const other=Object.entries(item.test_metrics||{}).filter(([name])=>name!==item.chosen_method).sort((a,b)=>(a[1]?.mae??Infinity)-(b[1]?.mae??Infinity))[0];
+      const performance=`${item.chosen_method||'unavailable'} · held-out MAE ${fmtValue(metric.mae,item.unit)} · RMSE ${fmtValue(metric.rmse,item.unit)} · n=${Number(metric.sample_count||item.counts?.test||0)}${other?` · best other method (${other[0]}) MAE ${fmtValue(other[1].mae,item.unit)}`:''} · train through ${item.periods?.training?.end||'—'} · selection ${item.periods?.selection?.start||'—'}–${item.periods?.selection?.end||'—'} · held-out ${item.periods?.test?.start||'—'}–${item.periods?.test?.end||'—'}`;
+      const interval=item.prediction_interval?`${fmtValue(item.prediction_interval.lower,item.unit)} to ${fmtValue(item.prediction_interval.upper,item.unit)} (90%; test coverage ${(100*item.prediction_interval.test_coverage).toFixed(1)}%)`:'Uncertainty not reliably quantified';
+      return `<tr><td>${esc(item.country_name||'')}<br><span class="muted">${esc(item.location_name||item.location_id)}</span></td><td>${esc(item.variable_code||'')}<br><span class="muted">${esc(item.unit||'')}</span></td><td>${item.predicted_value==null?'Unavailable':fmtValue(item.predicted_value,item.unit)}</td><td>${esc(item.target_date||'—')}<br><span class="muted">input through ${esc(item.as_of||'—')}</span></td><td>${esc(performance)}</td><td>${esc(interval)}</td></tr>`;
+    }).join('');
+    $('modelSuiteTable').innerHTML=`<table><thead><tr><th>Country / point</th><th>Variable</th><th>Estimate</th><th>Target / archive input date</th><th>Method and held-out test MAE</th><th>Prediction uncertainty</th></tr></thead><tbody>${rows}</tbody></table>`;
+    $('modelSuiteStatus').textContent=`${data.predictions.length} location-variable results · generated ${data.generated_at} · model bundle ${data.model_bundle_built_at}. Values originate from each archive's last usable date, not today.`;
+  }catch(err){$('modelSuiteStatus').textContent='Model results unavailable: '+err.message}
+  button.disabled=false; button.textContent='Load estimates for selected countries';
+}
+
 async function run(){
   const btn = $('go');
   const sel = [...S.sel[S.mode]];
@@ -611,6 +797,8 @@ async function boot(){
     run();
   });
   $('go').onclick = run;
+  $('compareRun').onclick = runComparison;
+  $('loadEstimates').onclick = loadModelEstimates;
   $('start').addEventListener('change', applyFiltersSoon);
   $('end').addEventListener('change', applyFiltersSoon);
 
@@ -623,17 +811,22 @@ async function boot(){
     return;
   }
   try{
-    S.historyAvailability = await api('/api/history/availability', {}, 12000);
+    S.climateCoverage = await api('/api/climate/coverage', {}, 20000);
+    S.historyAvailability = {coverage:S.climateCoverage.coverage||[], latest_retrieved_at:S.climateCoverage.latest_retrieved_at};
     S.historyIds = new Set((S.historyAvailability.coverage || [])
       .filter(item => item.min_date && item.max_date).map(item => item.location_id));
+    renderArchiveCoverage(); renderComparisonChoices();
   }catch(e){
-    S.historyAvailability = null; S.historyIds = new Set();
+    S.historyAvailability = null; S.climateCoverage = null; S.historyIds = new Set();
+    $('coverageSummary').textContent='Coverage unavailable';
+    $('coverageTable').innerHTML=`<div class="summary-empty">Could not load verified archive coverage: ${esc(e.message)}</div>`;
   }
   S.all.forEach((s,i) => S.colors[s.id] = PALETTE[i % PALETTE.length]);
   S.all.slice(0,3).forEach(s => S.sel.live.add(s.id));
   S.all.filter(s => s.in_demo).forEach(s => S.sel.demo.add(s.id));
   S.all.filter(s => S.historyIds.has(s.id)).slice(0,3).forEach(s => S.sel.historical.add(s.id));
   drawChips(); run();
+  if(S.climateCoverage && S.comparisonSelection.size>=2) runComparison();
 }
 boot();
 </script>

@@ -47,6 +47,7 @@ def list_stations():
     for loc in nasa_power.DEFAULT_LOCATIONS:
         stations[loc["location_id"]] = {
             "id": loc["location_id"], "name": loc["location_name"],
+            "country_name": loc.get("country_name", ""), "country_code": loc.get("country_code", ""),
             "lat": loc["latitude"], "lon": loc["longitude"], "in_demo": False,
         }
     try:

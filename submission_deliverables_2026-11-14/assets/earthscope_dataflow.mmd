@@ -1,35 +1,43 @@
 flowchart TB
-    UI["Browser dashboard<br/>Live · Historical archive · Simulated demo<br/>map · table · four charts · graph summaries"] --> API["FastAPI<br/>api.py · dashboard and history/model APIs"]
-    API --> SVC["dashboard_service.py<br/>live request: 31-day cap · short-lived cache<br/>historical query: selected UTC date window"]
+    UI["Browser dashboard<br/>Live · Historical archive · Simulated demo<br/>map · table · four charts · coverage · comparison · trends · estimates"]
+    API["FastAPI · api.py<br/>dashboard, history, climate, model APIs"]
+    SVC["dashboard_service.py<br/>live request: 31-day cap · short-lived cache<br/>archive query: selected UTC date window"]
+    NASA["NASA POWER Daily point API<br/>T2M · RH2M · WS10M · PRECTOTCORR<br/>UTC · grid-cell estimates"]
+    NORM["Normalize and validate<br/>WS10M: m/s × 3.6 → km/h<br/>fill/missing values remain null"]
+    LIVE["Live dashboard response<br/>source metadata · latest values · prototype rule levels"]
+    DEMO["Bundled labelled demo observations"]
+    RULES["Prototype threshold rules<br/>not official warnings or disaster predictions"]
+    INCIDENTS["Simulated/prototype incident panel<br/>does not contact emergency services"]
+    INGEST["Retry-safe historical ingestion<br/>71 NASA POWER requests · raw gzip + SHA-256 retained"]
+    DB["SQLite schema v3 archive<br/>446,364 daily-variable observations<br/>12 countries × 4 variables · zero missing values"]
+    HIST["Historical queries<br/>location · variable · UTC date range · daily resolution"]
+    SUM["Deterministic graph summaries<br/>computed from the exact plotted observations"]
+    CMP["climate_analysis.py<br/>shared-range comparison · seasonal summaries<br/>extrema · completeness warnings · rankings"]
+    TREND["Annual trends<br/>complete calendar years only<br/>OLS per year and per decade · descriptive"]
+    SUITE["climate_model_suite.py<br/>48 one-day models · 12 locations × 4 variables<br/>chronological splits · gated intervals"]
+    ARCHIVE["Historical dashboard response<br/>observations, comparisons and estimates kept distinct"]
+    CARTO["CARTO basemap tiles<br/>map background only · not NASA data"]
 
-    SVC -->|Live mode| NASA["NASA POWER Daily point API<br/>T2M · RH2M · WS10M · PRECTOTCORR<br/>UTC · grid-cell estimates"]
-    NASA --> NORM["Normalize and validate<br/>WS10M: m/s × 3.6 → km/h<br/>fill/missing values remain null"]
-    NORM --> LIVE["Live dashboard response<br/>source metadata · latest values · prototype rule levels"]
-
-    INGEST["Retry-safe historical ingestion<br/>50 NASA POWER requests · raw gzip retained"] --> DB["SQLite v2 historical archive<br/>333,860 daily-variable observations<br/>5 cities × 4 variables · 1981-01-01 to 2026-09-14"]
-    DB --> HIST["Historical queries<br/>location · variable · UTC date range · daily resolution"]
-    HIST --> SUM["Deterministic graph summaries<br/>computed from the exact plotted observations"]
-    HIST --> MODEL["Cairo T2M ridge model<br/>one-day statistical estimate<br/>chronological held-out evaluation"]
-    HIST --> ARCHIVE["Historical dashboard response<br/>observations remain distinct from model estimate"]
-    SUM --> ARCHIVE
-    MODEL --> ARCHIVE
-
-    SVC -->|Simulated demo| DEMO["Bundled labelled demo observations"]
-    DEMO --> RULES["Prototype threshold rules<br/>not official warnings or disaster predictions"]
-    NORM --> RULES
-    RULES --> INCIDENTS["Simulated/prototype incident panel<br/>does not contact emergency services"]
-    INCIDENTS --> LIVE
-    CARTO["CARTO basemap tiles<br/>map background only · not NASA data"] --> UI
+    UI --> API --> SVC
+    SVC -->|Live mode| NASA --> NORM --> LIVE
+    SVC -->|Simulated demo| DEMO --> RULES
+    NORM --> RULES --> INCIDENTS --> LIVE
+    NASA -->|History retained| INGEST --> DB --> HIST
+    SVC -->|Archive mode| HIST
+    HIST --> SUM --> ARCHIVE
+    HIST --> CMP --> TREND --> ARCHIVE
+    HIST --> SUITE --> ARCHIVE
     LIVE --> UI
     ARCHIVE --> UI
+    CARTO --> UI
 
     classDef app fill:#0E1524,stroke:#22D3EE,color:#E6ECF8,stroke-width:1px;
     classDef nasa fill:#0B2732,stroke:#34D399,color:#E6ECF8,stroke-width:2px;
     classDef demo fill:#352819,stroke:#FBBF24,color:#FFF5D6,stroke-width:2px;
     classDef store fill:#13263B,stroke:#60A5FA,color:#E6ECF8,stroke-width:2px;
     classDef note fill:#171D2D,stroke:#8190AD,color:#D5DEEF,stroke-dasharray:4 3;
-    class UI,API,SVC,NORM,LIVE,HIST,SUM,MODEL,ARCHIVE,RULES,INCIDENTS app;
+    class UI,API,SVC,NORM,LIVE,HIST,SUM,CMP,TREND,SUITE,ARCHIVE,INCIDENTS app;
     class NASA nasa;
-    class DEMO demo;
+    class DEMO,RULES demo;
     class DB,INGEST store;
     class CARTO note;

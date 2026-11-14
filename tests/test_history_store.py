@@ -109,7 +109,11 @@ def test_v1_database_migrates_to_shared_provenance_without_losing_history(tmp_pa
     conn.close()
 
     store = HistoryStore(db)
-    assert store._connection.execute("PRAGMA user_version").fetchone()[0] == 2
+    assert store._connection.execute("PRAGMA user_version").fetchone()[0] == 3
+    country = store._connection.execute(
+        "SELECT country_name, country_code FROM locations WHERE location_id='cairo-eg'"
+    ).fetchone()
+    assert tuple(country) == ("Egypt", "EG")
     assert store._connection.execute("SELECT COUNT(*) FROM source_responses").fetchone()[0] == 1
     assert "source_response_id" in {
         row["name"] for row in store._connection.execute("PRAGMA table_info(observations)")

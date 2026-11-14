@@ -5,7 +5,7 @@ Run: python -m uvicorn api:app --port 8000, then open http://localhost:8000
 """
 import os
 from datetime import date
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +21,8 @@ from earthscope.prediction_model import (
     load_model_metadata,
     predict_next_day,
 )
+from earthscope.climate_analysis import compare_locations
+from earthscope.climate_model_suite import load_bundle as load_climate_bundle, predict_suite
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MAX_ARCHIVE_QUERY_DAYS = 3660
@@ -81,6 +83,103 @@ def api_history_availability():
         return store.availability()
     finally:
         store.close()
+
+
+@app.get("/api/climate/coverage")
+def api_climate_coverage():
+    """Country and exact per-variable calendar-year qualification from stored rows."""
+    store = HistoryStore()
+    try:
+        availability = store.availability()
+    finally:
+        store.close()
+    locations = availability.get("coverage", [])
+    countries: dict[str, dict[str, Any]] = {}
+    for location in locations:
+        code = location.get("country_code") or location.get("location_id")
+        country = countries.setdefault(code, {
+            "country_name": location.get("country_name") or "Unspecified",
+            "country_code": location.get("country_code") or "",
+            "location_ids": [], "qualified": False, "common_complete_years": [],
+        })
+        country["location_ids"].append(location["location_id"])
+        if location.get("qualified_10_complete_years"):
+            country["qualified"] = True
+            country["common_complete_years"] = location.get("common_complete_years", [])
+    qualified = [item for item in countries.values() if item["qualified"]]
+    return {
+        "source": "NASA POWER Daily Point API (RE community, UTC)",
+        "minimum_complete_years": 10,
+        "qualification_rule": "At least ten shared full calendar years with every daily value valid for T2M, RH2M, WS10M, and PRECTOTCORR at the listed city coordinate.",
+        "country_count": len(countries), "qualified_country_count": len(qualified),
+        "countries": sorted(countries.values(), key=lambda item: item["country_name"]),
+        "coverage": locations,
+        "total_observation_rows": availability.get("total_observation_rows", 0),
+        "latest_retrieved_at": availability.get("latest_retrieved_at"),
+    }
+
+
+@app.get("/api/climate/comparison")
+def api_climate_comparison(
+    locations: List[str] = Query(default=[]),
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    variable: Literal["T2M", "RH2M", "WS10M", "PRECTOTCORR"] = "T2M",
+):
+    store = HistoryStore()
+    try:
+        return compare_locations(store, locations, start_date, end_date, variable, min_locations=2)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    finally:
+        store.close()
+
+
+@app.get("/api/climate/trends")
+def api_climate_trends(
+    locations: List[str] = Query(default=[]),
+    start_date: date = Query(default=date(1981, 1, 1)),
+    end_date: date = Query(default=date(2025, 12, 31)),
+    variable: Literal["T2M", "RH2M", "WS10M", "PRECTOTCORR"] = "T2M",
+):
+    store = HistoryStore()
+    try:
+        return compare_locations(store, locations, start_date, end_date, variable, min_locations=1)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    finally:
+        store.close()
+
+
+@app.get("/api/climate/models/evaluation")
+def api_climate_model_evaluation(
+    variable: Optional[Literal["T2M", "RH2M", "WS10M", "PRECTOTCORR"]] = None,
+    locations: List[str] = Query(default=[]),
+):
+    try:
+        bundle = load_climate_bundle()
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(503, str(exc)) from exc
+    selected = set(locations)
+    entries = []
+    for item in bundle["entries"].values():
+        metadata = item["metadata"]
+        if selected and metadata.get("location_id") not in selected:
+            continue
+        if variable and metadata.get("variable_code") != variable:
+            continue
+        entries.append(metadata)
+    return {"algorithm_version": bundle.get("algorithm_version"), "built_at": bundle.get("built_at"),
+            "dataset": bundle.get("dataset"), "model_count": bundle.get("model_count"),
+            "evaluations": entries, "caveats": bundle.get("caveats", [])}
+
+
+@app.get("/api/predictions/next-day/all")
+def api_all_next_day_estimates(locations: List[str] = Query(default=[])):
+    try:
+        return predict_suite(locations)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(503, str(exc)) from exc
 
 
 @app.get("/api/history/observations")
